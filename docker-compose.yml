@@ -1,0 +1,62 @@
+services:
+  web-service:
+    build:
+      context: .
+      dockerfile: cmd/web-service/Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  user-service:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: cmd/user-service/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - PORT=8080
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=dbUser
+      - DB_PASSWORD=dbPassword
+      - DB_NAME=my_db
+      - JWT_SECRET=eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTc3NDI5ODQwOCwiaWF0IjoxNzc0Mjk4NDA4fQ.asZqYyeBhdZNOovgsZahyco13vJX9RSDEEcQGb3Ivk4
+    networks:
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    container_name: fch_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: my_db
+      POSTGRES_USER: dbUser
+      POSTGRES_PASSWORD: dbPassword
+      DB_HOST: db
+      DB_PORT: 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbUser -d my_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres_data:

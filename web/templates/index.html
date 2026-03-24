@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Fch — Chats</title>
+
+        <style>
+            :root {
+                --bg: #f7f9fb;
+                --card: #fff;
+                --text: #1f2933;
+                --muted: #6b7280;
+                --accent: #4f46e5;
+                --border: #e5e7eb;
+            }
+            [data-theme="dark"] {
+                --bg: #0f172a;
+                --card: #1e293b;
+                --text: #e5e7eb;
+                --muted: #94a3b8;
+                --accent: #6366f1;
+                --border: #334155;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: sans-serif;
+                background: var(--bg);
+                color: var(--text);
+            }
+
+            .container {
+                max-width: 720px;
+                margin: auto;
+                padding: 16px;
+            }
+
+            header {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 12px;
+            }
+            .top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .toggle {
+                border: 1px solid var(--border);
+                background: none;
+                padding: 6px 10px;
+                border-radius: 8px;
+                cursor: pointer;
+                color: var(--text);
+            }
+
+            form {
+                display: flex;
+                gap: 8px;
+            }
+            input {
+                flex: 1;
+                padding: 12px;
+                border-radius: 10px;
+                border: 1px solid var(--border);
+                background: var(--card);
+                color: var(--text);
+            }
+            button {
+                padding: 10px 16px;
+                border: none;
+                border-radius: 10px;
+                background: var(--accent);
+                color: #fff;
+                cursor: pointer;
+            }
+
+            .status {
+                font-size: 14px;
+                color: var(--muted);
+            }
+
+            .chat {
+                display: block;
+                padding: 14px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: var(--card);
+                text-decoration: none;
+                color: inherit;
+                margin-top: 10px;
+                transition: 0.2s;
+            }
+            .chat:hover {
+                border-color: var(--accent);
+                transform: translateY(-2px);
+            }
+
+            @media (max-width: 480px) {
+                form {
+                    flex-direction: column;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <header>
+                <div class="top">
+                    <h2>Fch</h2>
+                    <button class="toggle" id="themeBtn">🌙</button>
+                </div>
+
+                <form id="form">
+                    <input
+                        id="input"
+                        placeholder="Поиск по имени пользователя..."
+                        required
+                    />
+                    <button id="btn">
+                        <span id="btnText">Поиск</span>
+                    </button>
+                </form>
+
+                <div class="status" id="status"></div>
+            </header>
+
+            <main id="list"></main>
+        </div>
+
+        <script>
+            const list = document.getElementById("list");
+            const status = document.getElementById("status");
+            const input = document.getElementById("input");
+
+            const chats = [
+                { id: 1, name: "Frontend Devs", members: 5 },
+                { id: 2, name: "Design Team", members: 3 },
+            ];
+
+            function render(data) {
+                if (!data.length) {
+                    list.innerHTML = '<div class="status">Нет чатов</div>';
+                    return;
+                }
+                list.innerHTML = data
+                    .map(
+                        (c) => `
+    <a href="#" class="chat">
+      <b>${c.name}</b><br>
+      <span>${c.members} участников</span>
+    </a>
+  `,
+                    )
+                    .join("");
+            }
+
+            async function search(query) {
+                try {
+                    status.textContent = "Поиск...";
+
+                    const res = await fetch("/search-user", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ query }),
+                    });
+
+                    if (!res.ok) throw new Error();
+
+                    const data = await res.json();
+                    render(data.chats || []);
+                    status.textContent = "";
+                } catch {
+                    status.textContent = "Ошибка сети или сервера";
+                }
+            }
+
+            document.getElementById("form").onsubmit = (e) => {
+                e.preventDefault();
+                const q = input.value.trim();
+                if (q) search(q);
+            };
+
+            document.getElementById("themeBtn").onclick = () => {
+                const html = document.documentElement;
+                html.dataset.theme =
+                    html.dataset.theme === "dark" ? "light" : "dark";
+            };
+
+            render(chats);
+        </script>
+    </body>
+</html>

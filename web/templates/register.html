@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Fch — Login</title>
+
+        <style>
+            :root {
+                --bg: #f7f9fb;
+                --card: #fff;
+                --text: #1f2933;
+                --accent: #4f46e5;
+                --border: #e5e7eb;
+            }
+            [data-theme="dark"] {
+                --bg: #0f172a;
+                --card: #1e293b;
+                --text: #e5e7eb;
+                --accent: #6366f1;
+                --border: #334155;
+            }
+
+            body {
+                margin: 0;
+                font-family: sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+            }
+
+            .card {
+                width: 100%;
+                max-width: 320px;
+                padding: 20px;
+                border-radius: 12px;
+                background: var(--card);
+                border: 1px solid var(--border);
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            input {
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--card);
+                color: var(--text);
+            }
+
+            button {
+                padding: 10px;
+                border: none;
+                border-radius: 8px;
+                background: var(--accent);
+                color: #fff;
+                cursor: pointer;
+            }
+
+            .status {
+                font-size: 14px;
+                text-align: center;
+            }
+        </style>
+    </head>
+
+    <body>
+        <form class="card" id="form">
+            <h3>Вход</h3>
+
+            <input name="login" placeholder="Login" required />
+            <input
+                name="password"
+                type="password"
+                placeholder="Password"
+                required
+            />
+
+            <button>Войти</button>
+
+            <div class="status" id="status"></div>
+        </form>
+
+        <script>
+            const form = document.getElementById("form");
+            const status = document.getElementById("status");
+
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+
+                const data = Object.fromEntries(new FormData(form));
+
+                try {
+                    status.textContent = "Вход...";
+
+                    const res = await fetch("/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data),
+                    });
+
+                    if (!res.ok) throw new Error();
+
+                    status.textContent = "Успешно";
+                    // location.href = 'index.html';
+                } catch {
+                    status.textContent = "Ошибка входа";
+                }
+            };
+        </script>
+    </body>
+</html>
