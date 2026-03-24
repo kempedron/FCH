@@ -3,6 +3,8 @@ package handler
 import (
 	"FCH/internal/chat-service/service"
 	"FCH/internal/middleware"
+	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 )
@@ -17,6 +19,10 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 		}
 		chat, err := service.GetChatInfo(middleware.GetUsernameByID(uint(userID)), uint(myID))
 		if err != nil {
+			if errors.Is(err, fmt.Errorf("failed to create chat")) {
+				http.Error(w, "user not found", http.StatusNotFound)
+				return
+			}
 			http.Error(w, "chat not found", http.StatusNotFound)
 			return
 		}
