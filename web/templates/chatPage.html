@@ -1,0 +1,494 @@
+{{define "chatPage.html"}}
+<!doctype html>
+<html lang="ru" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Fch — {{.Name}}</title>
+        <style>
+            :root {
+                --bg: #f7f9fb;
+                --card: #fff;
+                --text: #1f2933;
+                --muted: #6b7280;
+                --accent: #4f46e5;
+                --border: #e5e7eb;
+                --bubble-in: #fff;
+                --bubble-out: #4f46e5;
+                --bubble-out-text: #fff;
+            }
+            [data-theme="dark"] {
+                --bg: #0f172a;
+                --card: #1e293b;
+                --text: #e5e7eb;
+                --muted: #94a3b8;
+                --accent: #6366f1;
+                --border: #334155;
+                --bubble-in: #1e293b;
+                --bubble-out: #6366f1;
+                --bubble-out-text: #fff;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                height: 100dvh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* ── Top bar ── */
+            header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                background: var(--card);
+                border-bottom: 1px solid var(--border);
+                flex-shrink: 0;
+            }
+            .back-btn {
+                text-decoration: none;
+                color: var(--accent);
+                font-size: 20px;
+                line-height: 1;
+                padding: 4px 6px;
+                border-radius: 8px;
+                transition: background 0.15s;
+            }
+            .back-btn:hover {
+                background: var(--border);
+            }
+
+            .chat-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .chat-info h2 {
+                font-size: 16px;
+                font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .chat-info span {
+                font-size: 12px;
+                color: var(--muted);
+            }
+
+            .header-actions {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            /* participants pill */
+            .members-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 10px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: none;
+                color: var(--text);
+                font-size: 13px;
+                cursor: pointer;
+                transition: border-color 0.15s;
+            }
+            .members-btn:hover {
+                border-color: var(--accent);
+            }
+
+            .toggle {
+                border: 1px solid var(--border);
+                background: none;
+                padding: 6px 10px;
+                border-radius: 8px;
+                cursor: pointer;
+                color: var(--text);
+            }
+
+            /* ── Layout ── */
+            .body {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+            }
+
+            /* ── Sidebar ── */
+            .sidebar {
+                width: 220px;
+                border-right: 1px solid var(--border);
+                background: var(--card);
+                display: flex;
+                flex-direction: column;
+                flex-shrink: 0;
+                overflow: hidden;
+                transition: width 0.2s ease;
+            }
+            .sidebar.hidden {
+                width: 0;
+            }
+
+            .sidebar-header {
+                padding: 12px 16px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--muted);
+                border-bottom: 1px solid var(--border);
+                flex-shrink: 0;
+            }
+            .sidebar-list {
+                overflow-y: auto;
+                flex: 1;
+                padding: 8px;
+            }
+            .member {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px;
+                border-radius: 8px;
+                transition: background 0.15s;
+            }
+            .member:hover {
+                background: var(--bg);
+            }
+            .avatar {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: var(--accent);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 13px;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+            .member-info {
+                min-width: 0;
+            }
+            .member-name {
+                font-size: 13px;
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .member-role {
+                font-size: 11px;
+                color: var(--muted);
+            }
+
+            /* ── Messages area ── */
+            .chat-area {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                scroll-behavior: smooth;
+            }
+
+            /* date divider */
+            .date-divider {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin: 8px 0;
+            }
+            .date-divider hr {
+                flex: 1;
+                border: none;
+                border-top: 1px solid var(--border);
+            }
+            .date-divider span {
+                font-size: 11px;
+                color: var(--muted);
+                white-space: nowrap;
+            }
+
+            /* bubble */
+            .msg {
+                display: flex;
+                flex-direction: column;
+                max-width: 68%;
+            }
+            .msg.out {
+                align-self: flex-end;
+                align-items: flex-end;
+            }
+            .msg.in {
+                align-self: flex-start;
+                align-items: flex-start;
+            }
+
+            .msg-author {
+                font-size: 11px;
+                color: var(--muted);
+                margin-bottom: 3px;
+                padding: 0 4px;
+            }
+
+            .bubble {
+                padding: 10px 14px;
+                border-radius: 16px;
+                font-size: 14px;
+                line-height: 1.5;
+                word-break: break-word;
+            }
+            .msg.in .bubble {
+                background: var(--bubble-in);
+                border: 1px solid var(--border);
+                border-bottom-left-radius: 4px;
+            }
+            .msg.out .bubble {
+                background: var(--bubble-out);
+                color: var(--bubble-out-text);
+                border-bottom-right-radius: 4px;
+            }
+
+            .msg-time {
+                font-size: 10px;
+                color: var(--muted);
+                margin-top: 3px;
+                padding: 0 4px;
+            }
+
+            /* empty state */
+            .empty {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: var(--muted);
+                gap: 8px;
+            }
+            .empty-icon {
+                font-size: 40px;
+            }
+
+            /* ── Input bar ── */
+            .input-bar {
+                padding: 12px 16px;
+                background: var(--card);
+                border-top: 1px solid var(--border);
+                display: flex;
+                gap: 8px;
+                align-items: flex-end;
+                flex-shrink: 0;
+            }
+            .input-bar textarea {
+                flex: 1;
+                padding: 10px 14px;
+                border-radius: 10px;
+                border: 1px solid var(--border);
+                background: var(--bg);
+                color: var(--text);
+                font-family: inherit;
+                font-size: 14px;
+                resize: none;
+                max-height: 120px;
+                line-height: 1.5;
+                transition: border-color 0.15s;
+            }
+            .input-bar textarea:focus {
+                outline: none;
+                border-color: var(--accent);
+            }
+            .send-btn {
+                padding: 10px 18px;
+                border: none;
+                border-radius: 10px;
+                background: var(--accent);
+                color: #fff;
+                cursor: pointer;
+                font-size: 14px;
+                white-space: nowrap;
+                align-self: flex-end;
+                transition: opacity 0.15s;
+            }
+            .send-btn:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+
+            @media (max-width: 560px) {
+                .sidebar {
+                    display: none;
+                }
+                .members-btn {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <a href="/" class="back-btn">←</a>
+            <div class="chat-info">
+                <h2>{{.Name}}</h2>
+                {{if .Description}}
+                <span>{{.Description}}</span>
+                {{else}}
+                <span>{{len .Participants}} участников</span>
+                {{end}}
+            </div>
+            <div class="header-actions">
+                <button class="members-btn" id="sidebarToggle">
+                    👥 {{len .Participants}}
+                </button>
+                <button class="toggle" id="themeBtn">🌙</button>
+            </div>
+        </header>
+
+        <div class="body">
+            <!-- Sidebar: participants -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">Участники</div>
+                <div class="sidebar-list">
+                    {{range .Participants}}
+                    <div class="member">
+                        <div class="avatar">{{slice .User.Username 0 1}}</div>
+                        <div class="member-info">
+                            <div class="member-name">{{.User.Username}}</div>
+                            <div class="member-role">{{.Role}}</div>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+            </aside>
+
+            <!-- Chat -->
+            <div class="chat-area">
+                <div class="messages" id="messages">
+                    {{if not .Messages}}
+                    <div class="empty">
+                        <div class="empty-icon">💬</div>
+                        <div>Сообщений пока нет</div>
+                        <div style="font-size: 13px">
+                            Начните общение первым!
+                        </div>
+                    </div>
+                    {{else}} {{range .Messages}}
+                    <div class="msg in">
+                        <div class="msg-author">{{.Author.Username}}</div>
+                        <div class="bubble">{{.Content}}</div>
+                        <div class="msg-time">
+                            {{.CreatedAt.Format "15:04"}}
+                        </div>
+                    </div>
+                    {{end}} {{end}}
+                </div>
+
+                <div class="input-bar">
+                    <textarea
+                        id="msgInput"
+                        placeholder="Написать сообщение..."
+                        rows="1"
+                        maxlength="4000"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn">Отправить</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Theme toggle
+            const themeBtn = document.getElementById("themeBtn");
+            const html = document.documentElement;
+            const saved = localStorage.getItem("theme");
+            if (saved) {
+                html.dataset.theme = saved;
+                themeBtn.textContent = saved === "dark" ? "☀️" : "🌙";
+            }
+            themeBtn.onclick = () => {
+                const next = html.dataset.theme === "dark" ? "light" : "dark";
+                html.dataset.theme = next;
+                themeBtn.textContent = next === "dark" ? "☀️" : "🌙";
+                localStorage.setItem("theme", next);
+            };
+
+            // Sidebar toggle
+            const sidebar = document.getElementById("sidebar");
+            document.getElementById("sidebarToggle").onclick = () => {
+                sidebar.classList.toggle("hidden");
+            };
+
+            // Auto-grow textarea
+            const input = document.getElementById("msgInput");
+            input.addEventListener("input", () => {
+                input.style.height = "auto";
+                input.style.height = Math.min(input.scrollHeight, 120) + "px";
+            });
+
+            // Send on Ctrl+Enter
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Scroll to bottom on load
+            const messages = document.getElementById("messages");
+            messages.scrollTop = messages.scrollHeight;
+
+            // Send message
+            const sendBtn = document.getElementById("sendBtn");
+
+            async function sendMessage() {
+                const content = input.value.trim();
+                if (!content) return;
+
+                sendBtn.disabled = true;
+                const chatID = window.location.pathname
+                    .split("/")
+                    .filter(Boolean)
+                    .pop();
+
+                try {
+                    const res = await fetch(`/chat/${chatID}/send`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ content }),
+                    });
+                    if (!res.ok) throw new Error();
+                    input.value = "";
+                    input.style.height = "auto";
+                    // TODO: append message to DOM or reload via WS
+                    window.location.reload();
+                } catch {
+                    alert("Не удалось отправить сообщение");
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            }
+
+            sendBtn.onclick = sendMessage;
+        </script>
+    </body>
+</html>
+{{end}}

@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -63,12 +64,8 @@ func (g *APIGateway) proxyToService(serviceName string) http.HandlerFunc {
 	}
 }
 
-func (g *APIGateway) proxyToBankService(w http.ResponseWriter, r *http.Request) {
-	g.proxyToService("bank-service")(w, r)
-}
-
-func (g *APIGateway) proxyToOrderService(w http.ResponseWriter, r *http.Request) {
-	g.proxyToService("order-service")(w, r)
+func (g *APIGateway) proxyToChatService(w http.ResponseWriter, r *http.Request) {
+	g.proxyToService("chat-service")(w, r)
 }
 
 func (g *APIGateway) proxyToUserService(w http.ResponseWriter, r *http.Request) {
@@ -80,13 +77,16 @@ func (g *APIGateway) proxyToWebService(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *APIGateway) setRoutes() {
-	g.router.HandleFunc("/login", g.proxyToWebService).Methods("GET")
-	g.router.HandleFunc("/register", g.proxyToWebService).Methods("GET")
+	g.router.HandleFunc("/login", g.proxyToUserService).Methods("GET")
+	g.router.HandleFunc("/register", g.proxyToUserService).Methods("GET")
 	g.router.HandleFunc("/login", g.proxyToUserService).Methods("POST")
 	g.router.HandleFunc("/register", g.proxyToUserService).Methods("POST")
+	g.router.HandleFunc("/search/{username}", g.proxyToUserService).Methods("GET")
 
 	protected := g.router.PathPrefix("/").Subrouter()
 	protected.HandleFunc("/", g.proxyToWebService).Methods("GET")
+	protected.HandleFunc("/chat/{userID}", g.proxyToChatService).Methods("GET")
+
 	protected.Use(middleware.JWTAuth)
 
 }
@@ -103,10 +103,10 @@ func NewAPIGateway(cfg *Config) *APIGateway {
 }
 
 func main() {
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Println("No .env file found, using system environment")
-	// }
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, using system environment")
+	}
 
 	cfg := &Config{
 		Port:           os.Getenv("PORT"),

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Fch — Пользователь</title>
+
+        <style>
+            :root {
+                --bg: #f7f9fb;
+                --card: #fff;
+                --text: #1f2933;
+                --muted: #6b7280;
+                --accent: #4f46e5;
+                --border: #e5e7eb;
+            }
+            [data-theme="dark"] {
+                --bg: #0f172a;
+                --card: #1e293b;
+                --text: #e5e7eb;
+                --muted: #94a3b8;
+                --accent: #6366f1;
+                --border: #334155;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: sans-serif;
+                background: var(--bg);
+                color: var(--text);
+            }
+
+            .container {
+                max-width: 720px;
+                margin: auto;
+                padding: 16px;
+            }
+
+            header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+
+            .toggle {
+                border: 1px solid var(--border);
+                background: none;
+                padding: 6px 10px;
+                border-radius: 8px;
+                cursor: pointer;
+                color: var(--text);
+            }
+
+            .card {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 20px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            .username {
+                font-size: 22px;
+                font-weight: 600;
+            }
+
+            .row {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 12px;
+                border-radius: 10px;
+                background: var(--bg);
+                border: 1px solid var(--border);
+            }
+
+            .label {
+                color: var(--muted);
+            }
+
+            .value {
+                font-weight: 500;
+            }
+
+            .actions {
+                margin-top: 16px;
+                display: flex;
+                justify-content: center;
+            }
+
+            .chat-btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 18px;
+                border-radius: 999px;
+                background: var(--accent);
+                color: #fff;
+                border: none;
+                font-size: 15px;
+                cursor: pointer;
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+                transition: 0.2s;
+                text-decoration: none;
+            }
+
+            .chat-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            }
+
+            .icon {
+                font-size: 16px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <header>
+                <h2>Профиль</h2>
+                <button class="toggle" id="themeBtn">🌙</button>
+            </header>
+
+            <main>
+                <div class="card">
+                    <!-- USERNAME -->
+                    <div class="username">{{.Username}}</div>
+
+                    <!-- ID -->
+                    <div class="row">
+                        <span class="label">ID</span>
+                        <span class="value">{{.ID}}</span>
+                    </div>
+
+                    <!-- ACTION -->
+                    <div class="actions">
+                        <form method="GET" action="/chat/{{.ID}}">
+                            <button class="chat-btn" type="submit">
+                                <span class="icon">✈️</span>
+                                Написать
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script>
+            document.getElementById("themeBtn").onclick = () => {
+                const html = document.documentElement;
+                html.dataset.theme =
+                    html.dataset.theme === "dark" ? "light" : "dark";
+            };
+        </script>
+    </body>
+</html>

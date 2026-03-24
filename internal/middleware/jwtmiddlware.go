@@ -40,7 +40,7 @@ func JWTAuth(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		ctx := context.WithValue(r.Context(), usernameKey, claims.UserID)
+		ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 		ctx = context.WithValue(ctx, usernameKey, claims.Username)
 
 		log.Printf("userID from middleware: %d, userID from middleware: %s", claims.UserID, claims.Username)

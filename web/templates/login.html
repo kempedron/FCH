@@ -72,7 +72,7 @@
         <form class="card" id="form">
             <h3>Вход</h3>
 
-            <input name="login" placeholder="Login" required />
+            <input name="username" placeholder="Username" required />
             <input
                 name="password"
                 type="password"
@@ -91,24 +91,20 @@
 
             form.onsubmit = async (e) => {
                 e.preventDefault();
-
                 const data = Object.fromEntries(new FormData(form));
-
                 try {
                     status.textContent = "Вход...";
-
                     const res = await fetch("/login", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(data),
+                        credentials: "include",
                     });
-
-                    if (!res.ok) throw new Error();
-
+                    if (!res.ok) throw new Error(await res.text());
                     status.textContent = "Успешно";
-                    // location.href = 'index.html';
-                } catch {
-                    status.textContent = "Ошибка входа";
+                    window.location.href = "/"; // теперь сработает корректно
+                } catch (e) {
+                    status.textContent = "Ошибка входа: " + e.message;
                 }
             };
         </script>

@@ -70,9 +70,9 @@
 
     <body>
         <form class="card" id="form">
-            <h3>Вход</h3>
+            <h3>Регистрация</h3>
 
-            <input name="login" placeholder="Login" required />
+            <input name="username" placeholder="Username" required />
             <input
                 name="password"
                 type="password"
@@ -95,20 +95,21 @@
                 const data = Object.fromEntries(new FormData(form));
 
                 try {
-                    status.textContent = "Вход...";
+                    status.textContent = "Регистрация";
 
-                    const res = await fetch("/login", {
+                    const res = await fetch("/register", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(data),
+                        credentials: "include",
                     });
 
                     if (!res.ok) throw new Error();
 
                     status.textContent = "Успешно";
-                    // location.href = 'index.html';
+                    window.location.href = "/";
                 } catch {
-                    status.textContent = "Ошибка входа";
+                    status.textContent = "Ошибка регистрации";
                 }
             };
         </script>

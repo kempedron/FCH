@@ -17,10 +17,10 @@ type User struct {
 	Messages []Message        `gorm:"foreignKey:AuthorID"`
 }
 
+// PERSONAL CHAT(1x1)
 type Chat struct {
 	gorm.Model
 	Name         string           `gorm:"type:varchar(255)" json:"name"`
-	Description  string           `gorm:"type:text" json:"description"`
 	Participants []ChatParticiant `gorm:"foreignKey:ChatID"`
 	Messages     []Message        `gorm:"foreignKey:ChatID"`
 }
@@ -30,6 +30,7 @@ type ChatParticiant struct {
 	ChatID     uint   `gorm:"type:index;not null"`
 	UserID     uint   `gorm:"type:index;not null"`
 	Role       string `gorm:"type:varchar(255);not null;default:'member'"`
+	IsGroup    bool   `gorm:"type:boolean;not null;default:false"`
 	LastReadAt time.Time
 	Chat       Chat `gorm:"foreignKey:ChatID"`
 	User       User `gorm:"foreignKey:UserID"`
