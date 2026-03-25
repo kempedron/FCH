@@ -112,12 +112,23 @@ func MakeHandlerForSearchPage(tmpl *template.Template) http.HandlerFunc {
 		username := mux.Vars(r)["username"]
 		err := database.DB.Where("username=?", username).First(&user).Error
 		if err != nil {
+			if r.Header.Get("Accept") == "application/json" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(map[string]string{"error": "User not found"})
+				return
+			}
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}
 		data := SearchedUser{
 			Username: user.Username,
 			ID:       user.ID,
+		}
+		if r.Header.Get("Accept") == "application/json" {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(data)
+			return
 		}
 		tmpl.ExecuteTemplate(w, "search.html", data)
 	})
