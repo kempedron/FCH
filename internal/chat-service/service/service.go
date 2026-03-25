@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetChatInfo(username string, myID uint) (models.Chat, error) {
+func GetChatInfo(username string, myID uint) (*models.Chat, error) {
 	var chat models.Chat
 	log.Printf("username: %s myID: %d", username, myID)
 	err := database.DB.Preload("Participants").
@@ -21,22 +21,22 @@ func GetChatInfo(username string, myID uint) (models.Chat, error) {
 	if err != nil {
 		log.Printf("error: %s", err)
 		if err == gorm.ErrRecordNotFound {
-			err := CreateChat(middleware.GetIDByUsername(username), myID)
+			newChat, err := CreateChat(middleware.GetIDByUsername(username), myID)
 			if err != nil {
-				return models.Chat{}, errors.New("failed to create chat")
+				return &models.Chat{}, errors.New("failed to create chat")
 			}
-			return models.Chat{}, nil
+			return newChat, nil
 		}
-		return models.Chat{}, errors.New("chat not found")
+		return &models.Chat{}, errors.New("chat not found")
 	}
-	return chat, nil
+	return &chat, nil
 }
 
-func CreateChat(userID uint, myID uint) error {
+func CreateChat(userID uint, myID uint) (*models.Chat, error) {
 	username := middleware.GetUsernameByID(userID)
 	log.Printf("username: %s", username)
 	if username == "" {
-		return errors.New("user not found")
+		return nil, errors.New("user not found")
 	}
 	chat := &models.Chat{
 		Name:         username,
@@ -44,5 +44,7 @@ func CreateChat(userID uint, myID uint) error {
 		Messages:     []models.Message{},
 	}
 	err := database.DB.Create(chat).Error
-	return err
+	return chat, err
 }
+
+func SaveMessageToDB()

@@ -14,6 +14,15 @@ func InitTemplates() *template.Template {
 		"multiply": func(a, b uint) uint {
 			return a * b
 		},
+		"firstChar": func(s string) string {
+			if len(s) == 0 {
+				return "?"
+			}
+			return string([]rune(s)[0])
+		},
+		"not": func(v any) bool {
+			return v == nil
+		},
 	}
 	return template.Must(
 		template.New("").Funcs(funcMap).ParseGlob("web/templates/*.html"),

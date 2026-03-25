@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/koding/websocketproxy"
 )
 
 type Config struct {
@@ -75,6 +76,27 @@ func (g *APIGateway) proxyToUserService(w http.ResponseWriter, r *http.Request) 
 func (g *APIGateway) proxyToWebService(w http.ResponseWriter, r *http.Request) {
 	g.proxyToService("web-service")(w, r)
 }
+func (g *APIGateway) proxyWebSocket(serviceName string) http.HandlerFunc {
+	target, _ := url.Parse(g.config.ChatServiceURL)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		wsTarget := *target
+
+		wsTarget.Scheme = "ws"
+		if target.Scheme == "https" {
+			wsTarget.Scheme = "wss"
+		}
+
+		wsTarget.Path = r.URL.Path
+
+		log.Printf("Proxying WebSocket to: %s", wsTarget.String())
+
+		proxy := websocketproxy.NewProxy(&wsTarget)
+
+		proxy.ServeHTTP(w, r)
+	}
+}
 
 func (g *APIGateway) setRoutes() {
 	g.router.HandleFunc("/login", g.proxyToUserService).Methods("GET")
@@ -86,6 +108,7 @@ func (g *APIGateway) setRoutes() {
 	protected := g.router.PathPrefix("/").Subrouter()
 	protected.HandleFunc("/", g.proxyToWebService).Methods("GET")
 	protected.HandleFunc("/chat/{userID}", g.proxyToChatService).Methods("GET")
+	protected.HandleFunc("/chat/{chatID}/send", g.proxyWebSocket("chat-service"))
 
 	protected.Use(middleware.JWTAuth)
 

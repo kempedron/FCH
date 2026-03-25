@@ -1,10 +1,9 @@
-{{define "chatPage.html"}}
 <!doctype html>
 <html lang="ru" data-theme="light">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Fch — {{.Name}}</title>
+        <title>Чат — {{.Chat.ID}}</title>
         <style>
             :root {
                 --bg: #f7f9fb;
@@ -28,23 +27,22 @@
                 --bubble-out: #6366f1;
                 --bubble-out-text: #fff;
             }
-
             * {
                 box-sizing: border-box;
                 margin: 0;
                 padding: 0;
             }
-
             body {
-                font-family: sans-serif;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
                 background: var(--bg);
                 color: var(--text);
                 height: 100dvh;
                 display: flex;
                 flex-direction: column;
+                overflow: hidden;
             }
-
-            /* ── Top bar ── */
             header {
                 display: flex;
                 align-items: center;
@@ -58,15 +56,8 @@
                 text-decoration: none;
                 color: var(--accent);
                 font-size: 20px;
-                line-height: 1;
-                padding: 4px 6px;
-                border-radius: 8px;
-                transition: background 0.15s;
+                padding: 4px 8px;
             }
-            .back-btn:hover {
-                background: var(--border);
-            }
-
             .chat-info {
                 flex: 1;
                 min-width: 0;
@@ -74,165 +65,40 @@
             .chat-info h2 {
                 font-size: 16px;
                 font-weight: 600;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
             }
-            .chat-info span {
-                font-size: 12px;
-                color: var(--muted);
-            }
-
-            .header-actions {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-            }
-
-            /* participants pill */
-            .members-btn {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 6px 10px;
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                background: none;
-                color: var(--text);
-                font-size: 13px;
-                cursor: pointer;
-                transition: border-color 0.15s;
-            }
-            .members-btn:hover {
-                border-color: var(--accent);
-            }
-
-            .toggle {
-                border: 1px solid var(--border);
-                background: none;
-                padding: 6px 10px;
-                border-radius: 8px;
-                cursor: pointer;
-                color: var(--text);
-            }
-
-            /* ── Layout ── */
-            .body {
+            .main-layout {
                 display: flex;
                 flex: 1;
                 overflow: hidden;
             }
-
-            /* ── Sidebar ── */
             .sidebar {
-                width: 220px;
+                width: 240px;
                 border-right: 1px solid var(--border);
                 background: var(--card);
-                display: flex;
-                flex-direction: column;
-                flex-shrink: 0;
-                overflow: hidden;
-                transition: width 0.2s ease;
+                transition: width 0.3s ease;
             }
             .sidebar.hidden {
                 width: 0;
-            }
-
-            .sidebar-header {
-                padding: 12px 16px;
-                font-size: 12px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: var(--muted);
-                border-bottom: 1px solid var(--border);
-                flex-shrink: 0;
-            }
-            .sidebar-list {
-                overflow-y: auto;
-                flex: 1;
-                padding: 8px;
-            }
-            .member {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 8px;
-                border-radius: 8px;
-                transition: background 0.15s;
-            }
-            .member:hover {
-                background: var(--bg);
-            }
-            .avatar {
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                background: var(--accent);
-                color: #fff;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 13px;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-            .member-info {
-                min-width: 0;
-            }
-            .member-name {
-                font-size: 13px;
-                font-weight: 500;
-                white-space: nowrap;
                 overflow: hidden;
-                text-overflow: ellipsis;
+                border-right: none;
             }
-            .member-role {
-                font-size: 11px;
-                color: var(--muted);
-            }
-
-            /* ── Messages area ── */
             .chat-area {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
-                overflow: hidden;
             }
-
             .messages {
                 flex: 1;
                 overflow-y: auto;
                 padding: 16px;
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
-                scroll-behavior: smooth;
+                gap: 12px;
             }
-
-            /* date divider */
-            .date-divider {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin: 8px 0;
-            }
-            .date-divider hr {
-                flex: 1;
-                border: none;
-                border-top: 1px solid var(--border);
-            }
-            .date-divider span {
-                font-size: 11px;
-                color: var(--muted);
-                white-space: nowrap;
-            }
-
-            /* bubble */
             .msg {
                 display: flex;
                 flex-direction: column;
-                max-width: 68%;
+                max-width: 75%;
             }
             .msg.out {
                 align-self: flex-end;
@@ -242,20 +108,12 @@
                 align-self: flex-start;
                 align-items: flex-start;
             }
-
-            .msg-author {
-                font-size: 11px;
-                color: var(--muted);
-                margin-bottom: 3px;
-                padding: 0 4px;
-            }
-
             .bubble {
-                padding: 10px 14px;
-                border-radius: 16px;
+                padding: 8px 14px;
+                border-radius: 14px;
                 font-size: 14px;
-                line-height: 1.5;
-                word-break: break-word;
+                line-height: 1.4;
+                position: relative;
             }
             .msg.in .bubble {
                 background: var(--bubble-in);
@@ -267,15 +125,36 @@
                 color: var(--bubble-out-text);
                 border-bottom-right-radius: 4px;
             }
-
-            .msg-time {
+            .time {
                 font-size: 10px;
                 color: var(--muted);
-                margin-top: 3px;
-                padding: 0 4px;
+                margin-top: 2px;
             }
-
-            /* empty state */
+            .input-bar {
+                padding: 12px 16px;
+                background: var(--card);
+                border-top: 1px solid var(--border);
+                display: flex;
+                gap: 8px;
+            }
+            textarea {
+                flex: 1;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--bg);
+                color: var(--text);
+                resize: none;
+                height: 40px;
+            }
+            .send-btn {
+                padding: 0 20px;
+                border: none;
+                border-radius: 8px;
+                background: var(--accent);
+                color: #fff;
+                cursor: pointer;
+            }
             .empty {
                 flex: 1;
                 display: flex;
@@ -283,64 +162,6 @@
                 align-items: center;
                 justify-content: center;
                 color: var(--muted);
-                gap: 8px;
-            }
-            .empty-icon {
-                font-size: 40px;
-            }
-
-            /* ── Input bar ── */
-            .input-bar {
-                padding: 12px 16px;
-                background: var(--card);
-                border-top: 1px solid var(--border);
-                display: flex;
-                gap: 8px;
-                align-items: flex-end;
-                flex-shrink: 0;
-            }
-            .input-bar textarea {
-                flex: 1;
-                padding: 10px 14px;
-                border-radius: 10px;
-                border: 1px solid var(--border);
-                background: var(--bg);
-                color: var(--text);
-                font-family: inherit;
-                font-size: 14px;
-                resize: none;
-                max-height: 120px;
-                line-height: 1.5;
-                transition: border-color 0.15s;
-            }
-            .input-bar textarea:focus {
-                outline: none;
-                border-color: var(--accent);
-            }
-            .send-btn {
-                padding: 10px 18px;
-                border: none;
-                border-radius: 10px;
-                background: var(--accent);
-                color: #fff;
-                cursor: pointer;
-                font-size: 14px;
-                white-space: nowrap;
-                align-self: flex-end;
-                transition: opacity 0.15s;
-            }
-            .send-btn:disabled {
-                opacity: 0.5;
-                cursor: default;
-            }
-
-            @media (max-width: 560px) {
-                .sidebar {
-                    display: none;
-                }
-                .members-btn {
-                    display: none;
-                }
             }
         </style>
     </head>
@@ -348,56 +169,89 @@
         <header>
             <a href="/" class="back-btn">←</a>
             <div class="chat-info">
-                <h2>{{.Name}}</h2>
-                {{if .Description}}
-                <span>{{.Description}}</span>
-                {{else}}
-                <span>{{len .Participants}} участников</span>
-                {{end}}
+                <h2>Чат #{{.Chat.ID}}</h2>
+                <span>{{len .Chat.Participants}} участников</span>
             </div>
             <div class="header-actions">
-                <button class="members-btn" id="sidebarToggle">
-                    👥 {{len .Participants}}
+                <button
+                    class="send-btn"
+                    style="
+                        background: none;
+                        color: var(--text);
+                        border: 1px solid var(--border);
+                    "
+                    id="sidebarToggle"
+                >
+                    👥
                 </button>
-                <button class="toggle" id="themeBtn">🌙</button>
+                <button
+                    class="send-btn"
+                    style="
+                        background: none;
+                        color: var(--text);
+                        border: 1px solid var(--border);
+                    "
+                    id="themeBtn"
+                >
+                    🌙
+                </button>
             </div>
         </header>
 
-        <div class="body">
-            <!-- Sidebar: participants -->
+        <div class="main-layout">
             <aside class="sidebar" id="sidebar">
-                <div class="sidebar-header">Участники</div>
-                <div class="sidebar-list">
-                    {{range .Participants}}
-                    <div class="member">
-                        <div class="avatar">{{slice .User.Username 0 1}}</div>
-                        <div class="member-info">
-                            <div class="member-name">{{.User.Username}}</div>
-                            <div class="member-role">{{.Role}}</div>
+                <div
+                    style="
+                        padding: 16px;
+                        font-weight: bold;
+                        border-bottom: 1px solid var(--border);
+                    "
+                >
+                    Участники
+                </div>
+                <div id="memberList" style="padding: 8px">
+                    {{range .Chat.Participants}}
+                    <div
+                        style="
+                            padding: 8px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        "
+                    >
+                        <div
+                            style="
+                                width: 30px;
+                                height: 30px;
+                                background: var(--accent);
+                                color: white;
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            "
+                        >
+                            {{firstChar .User.Username}}
                         </div>
+                        <span>{{.User.Username}}</span>
                     </div>
                     {{end}}
                 </div>
             </aside>
 
-            <!-- Chat -->
             <div class="chat-area">
                 <div class="messages" id="messages">
-                    {{if not .Messages}}
+                    {{if not .Chat.Messages}}
                     <div class="empty">
-                        <div class="empty-icon">💬</div>
-                        <div>Сообщений пока нет</div>
-                        <div style="font-size: 13px">
-                            Начните общение первым!
-                        </div>
+                        <div style="font-size: 40px">💬</div>
+                        <p>Сообщений пока нет</p>
                     </div>
-                    {{else}} {{range .Messages}}
-                    <div class="msg in">
-                        <div class="msg-author">{{.Author.Username}}</div>
+                    {{else}} {{$myID := .MyID}} {{range .Chat.Messages}}
+                    <div
+                        class="msg {{if eq .AuthorID $myID}}out{{else}}in{{end}}"
+                    >
                         <div class="bubble">{{.Content}}</div>
-                        <div class="msg-time">
-                            {{.CreatedAt.Format "15:04"}}
-                        </div>
+                        <div class="time">{{.CreatedAt.Format "15:04"}}</div>
                     </div>
                     {{end}} {{end}}
                 </div>
@@ -405,9 +259,8 @@
                 <div class="input-bar">
                     <textarea
                         id="msgInput"
-                        placeholder="Написать сообщение..."
+                        placeholder="Сообщение..."
                         rows="1"
-                        maxlength="4000"
                     ></textarea>
                     <button class="send-btn" id="sendBtn">Отправить</button>
                 </div>
@@ -415,80 +268,109 @@
         </div>
 
         <script>
-            // Theme toggle
-            const themeBtn = document.getElementById("themeBtn");
-            const html = document.documentElement;
-            const saved = localStorage.getItem("theme");
-            if (saved) {
-                html.dataset.theme = saved;
-                themeBtn.textContent = saved === "dark" ? "☀️" : "🌙";
-            }
-            themeBtn.onclick = () => {
-                const next = html.dataset.theme === "dark" ? "light" : "dark";
-                html.dataset.theme = next;
-                themeBtn.textContent = next === "dark" ? "☀️" : "🌙";
-                localStorage.setItem("theme", next);
-            };
+            // Парсим данные из шаблона безопасно
+            const myID = Number("{{.MyID}}");
+            const chatID = "{{.Chat.ID}}";
 
-            // Sidebar toggle
-            const sidebar = document.getElementById("sidebar");
-            document.getElementById("sidebarToggle").onclick = () => {
-                sidebar.classList.toggle("hidden");
-            };
+            // Участники для определения получателя
+            const participants = [
+                {{range .Chat.Participants}}{ id: {{.UserID}}, username: "{{.User.Username}}" },{{end}}
+            ];
 
-            // Auto-grow textarea
-            const input = document.getElementById("msgInput");
-            input.addEventListener("input", () => {
-                input.style.height = "auto";
-                input.style.height = Math.min(input.scrollHeight, 120) + "px";
-            });
+            const recipient = participants.find(p => Number(p.id) !== myID);
+            const recipientID = recipient ? recipient.id : 0;
 
-            // Send on Ctrl+Enter
-            input.addEventListener("keydown", (e) => {
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
+            // WebSocket
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const socketURL = `${protocol}//${window.location.host}/chat/${chatID}/send`;
+            console.log("Connecting to:", socketURL);
+            const socket = new WebSocket(socketURL);
 
-            // Scroll to bottom on load
-            const messages = document.getElementById("messages");
-            messages.scrollTop = messages.scrollHeight;
-
-            // Send message
+            const messagesContainer = document.getElementById("messages");
+            const msgInput = document.getElementById("msgInput");
             const sendBtn = document.getElementById("sendBtn");
 
-            async function sendMessage() {
-                const content = input.value.trim();
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            socket.onopen = () => console.log("WebSocket connected");
+            socket.onerror = (err) => console.error("WebSocket error:", err);
+            socket.onclose = () => console.warn("WebSocket closed");
+
+            socket.onmessage = function(event) {
+                try {
+                    console.log("New message received:", event.data);
+                    const msg = JSON.parse(event.data);
+                    appendMessage(msg);
+                } catch (e) {
+                    console.error("Parsing error:", e);
+                }
+            };
+
+            function appendMessage(msg) {
+                // Пытаемся найти контент в разных полях (зависит от JSON-тегов в Go)
+                const sID = msg.sender_id || msg.SenderID || msg.AuthorID;
+                const content = msg.content || msg.Content;
+
                 if (!content) return;
 
-                sendBtn.disabled = true;
-                const chatID = window.location.pathname
-                    .split("/")
-                    .filter(Boolean)
-                    .pop();
+                const isMine = Number(sID) === myID;
+                const msgDiv = document.createElement("div");
+                msgDiv.className = `msg ${isMine ? 'out' : 'in'}`;
 
-                try {
-                    const res = await fetch(`/chat/${chatID}/send`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        credentials: "include",
-                        body: JSON.stringify({ content }),
-                    });
-                    if (!res.ok) throw new Error();
-                    input.value = "";
-                    input.style.height = "auto";
-                    // TODO: append message to DOM or reload via WS
-                    window.location.reload();
-                } catch {
-                    alert("Не удалось отправить сообщение");
-                } finally {
-                    sendBtn.disabled = false;
-                }
+                const rawTime = msg.created_at || msg.CreatedAt;
+                const timeStr = rawTime ? new Date(rawTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                msgDiv.innerHTML = `
+                    <div class="bubble">${content}</div>
+                    <div class="time">${timeStr}</div>
+                `;
+
+                const emptyMsg = messagesContainer.querySelector('.empty');
+                if (emptyMsg) emptyMsg.remove();
+
+                messagesContainer.appendChild(msgDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
 
-            sendBtn.onclick = sendMessage;
+            function sendMsg() {
+                const content = msgInput.value.trim();
+
+                if (!content) return;
+
+                if (socket.readyState !== WebSocket.OPEN) {
+                    console.error("Socket not open. State:", socket.readyState);
+                    return;
+                }
+
+                const data = {
+                    recipient_id: Number(recipientID),
+                    content: content
+                };
+
+                console.log("Sending JSON:", data);
+                socket.send(JSON.stringify(data));
+                msgInput.value = "";
+            }
+
+            sendBtn.onclick = (e) => {
+                e.preventDefault();
+                sendMsg();
+            };
+
+            msgInput.onkeydown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMsg();
+                }
+            };
+
+            document.getElementById("sidebarToggle").onclick = () => document.getElementById("sidebar").classList.toggle("hidden");
+            document.getElementById("themeBtn").onclick = () => {
+                const html = document.documentElement;
+                const isDark = html.getAttribute("data-theme") === "dark";
+                html.setAttribute("data-theme", isDark ? "light" : "dark");
+                document.getElementById("themeBtn").innerText = isDark ? "🌙" : "☀️";
+            };
         </script>
     </body>
 </html>
-{{end}}
