@@ -15,6 +15,9 @@ func InitTemplates() *template.Template {
 		"multiply": func(a, b uint) uint {
 			return a * b
 		},
+		"mul": func(a, b int) int {
+			return a * b
+		},
 		"firstChar": func(s string) string {
 			if len(s) == 0 {
 				return "?"
@@ -41,6 +44,13 @@ func main() {
 	tmpl := InitTemplates()
 	r.HandleFunc("/chat/{userID:[0-9]+}", handler.MakeHandlerForChat(tmpl))
 	r.HandleFunc("/chat/{chatID}/send", handler.SendMessage)
-	///chat/{chatID}/send
+	r.HandleFunc("/my-chats", handler.MakeHandlerForMyChats(tmpl))
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("DEBUG: Chat Service got %s %s", r.Method, r.URL.Path)
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	http.ListenAndServe(":8080", r)
 }

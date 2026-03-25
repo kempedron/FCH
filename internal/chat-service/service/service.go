@@ -47,8 +47,6 @@ func CreateChat(userID uint, myID uint) (*models.Chat, error) {
 	return chat, err
 }
 
-func SaveMessageToDB()
-
 func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 	var chat models.Chat
 
@@ -76,4 +74,17 @@ func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 	}
 
 	return &chat, nil
+}
+
+func GetMyChats(myID uint) ([]models.Chat, error) {
+	var chats []models.Chat
+	err := database.DB.Preload("Participants.User").
+		Preload("Messages", func(db *gorm.DB) *gorm.DB {
+			return db.Order("messages.created_at DESC")
+		}).
+		Joins("JOIN chat_particiants ON chat_particiants.chat_id = chats.id").
+		Where("chat_particiants.user_id = ? AND chat_particiants.deleted_at IS NULL", myID).
+		Order("chats.updated_at DESC").
+		Find(&chats).Error
+	return chats, err
 }

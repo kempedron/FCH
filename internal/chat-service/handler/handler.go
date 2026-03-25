@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"FCH/internal/chat-service/service"
 	"FCH/internal/database"
 	"FCH/internal/middleware"
 	"FCH/internal/models"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -103,5 +105,26 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 		}
 
 		conn.WriteJSON(broadcastMsg)
+	}
+}
+
+func MakeHandlerForMyChats(tmpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		MyID, _ := middleware.GetUserIDFromRequest(r)
+
+		chats, err := service.GetMyChats(MyID)
+		if err != nil {
+			http.Error(w, "Failed to get chats", http.StatusInternalServerError)
+			return
+		}
+		data := struct {
+			Chats []models.Chat
+			MyID  uint
+		}{
+			Chats: chats,
+			MyID:  MyID,
+		}
+		fmt.Printf("Chats found: %d for UserID: %d\n", len(chats), MyID)
+		tmpl.ExecuteTemplate(w, "myChats.html", data)
 	}
 }

@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Fch — Поиск</title>
+        <title>Fch — Мои чаты</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -67,14 +67,14 @@
                 height: 500px;
                 background: #818cf8;
                 top: -180px;
-                left: -100px;
+                right: -100px;
             }
             .blob-2 {
                 width: 350px;
                 height: 350px;
                 background: #a78bfa;
                 bottom: 70px;
-                right: -80px;
+                left: -80px;
             }
 
             .container {
@@ -85,15 +85,12 @@
                 z-index: 1;
             }
 
+            /* ── Header ── */
             header {
-                margin-bottom: 28px;
-            }
-
-            .topbar {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 20px;
+                margin-bottom: 24px;
             }
 
             .logo {
@@ -121,6 +118,12 @@
                 letter-spacing: -0.5px;
             }
 
+            .header-right {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
             .icon-btn {
                 width: 38px;
                 height: 38px;
@@ -136,122 +139,47 @@
                 transition:
                     border-color 0.2s,
                     transform 0.15s;
+                text-decoration: none;
             }
             .icon-btn:hover {
                 border-color: var(--accent);
                 transform: scale(1.06);
             }
 
-            .search-wrap {
-                display: flex;
-                gap: 8px;
-                background: var(--card);
-                border: 1.5px solid var(--border);
-                border-radius: 14px;
-                padding: 6px 6px 6px 14px;
-                box-shadow: var(--shadow-sm);
-                transition:
-                    border-color 0.2s,
-                    box-shadow 0.2s;
-            }
-            .search-wrap:focus-within {
-                border-color: var(--accent);
-                box-shadow:
-                    0 0 0 3px rgba(99, 102, 241, 0.12),
-                    var(--shadow-sm);
-            }
-            .search-wrap input {
-                flex: 1;
-                border: none;
-                background: transparent;
-                color: var(--text);
-                font-family: inherit;
-                font-size: 15px;
-                outline: none;
-                min-width: 0;
-            }
-            .search-wrap input::placeholder {
-                color: var(--muted);
-            }
-
-            .search-btn {
-                padding: 9px 18px;
-                border: none;
-                border-radius: 10px;
-                background: var(--accent);
-                color: #fff;
-                font-family: inherit;
-                font-size: 14px;
+            .page-title {
+                font-size: 22px;
                 font-weight: 700;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                white-space: nowrap;
-                transition:
-                    background 0.2s,
-                    box-shadow 0.2s,
-                    transform 0.15s;
-            }
-            .search-btn:hover {
-                background: var(--accent-hover);
-                box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
-            }
-            .search-btn:active {
-                transform: scale(0.97);
+                letter-spacing: -0.4px;
+                margin-bottom: 18px;
             }
 
-            .status-bar {
-                margin-top: 14px;
-                font-size: 13px;
-                color: var(--muted);
-                min-height: 18px;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            .status-bar.loading::before {
-                content: "";
-                width: 14px;
-                height: 14px;
-                border: 2px solid var(--border);
-                border-top-color: var(--accent);
-                border-radius: 50%;
-                animation: spin 0.7s linear infinite;
-                flex-shrink: 0;
-            }
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-
-            #resultsList {
+            /* ── Chat list ── */
+            .chat-list {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
             }
 
-            .user-card {
+            .chat-item {
                 display: flex;
                 align-items: center;
                 gap: 14px;
                 padding: 14px 16px;
-                border: 1px solid var(--border);
-                border-radius: 14px;
                 background: var(--card);
+                border-radius: 16px;
                 text-decoration: none;
                 color: inherit;
+                border: 1px solid var(--border);
                 box-shadow: var(--shadow-sm);
                 transition:
-                    border-color 0.2s,
                     transform 0.2s,
+                    border-color 0.2s,
                     box-shadow 0.2s;
                 animation: fadeIn 0.3s ease both;
             }
-            .user-card:hover {
-                border-color: var(--accent);
+            .chat-item:hover {
                 transform: translateY(-2px);
+                border-color: var(--accent);
                 box-shadow: var(--shadow);
             }
 
@@ -267,60 +195,101 @@
             }
 
             .avatar {
-                width: 44px;
-                height: 44px;
+                width: 48px;
+                height: 48px;
                 background: var(--accent);
                 color: white;
-                border-radius: 50%;
+                border-radius: 14px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-weight: 700;
-                font-size: 18px;
+                font-size: 20px;
                 text-transform: uppercase;
                 flex-shrink: 0;
             }
-            .user-info {
+
+            .chat-info {
                 flex: 1;
                 min-width: 0;
             }
-            .user-info b {
-                display: block;
-                font-size: 15px;
-                font-weight: 700;
+
+            .chat-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin-bottom: 3px;
+                gap: 8px;
             }
-            .user-info span {
-                font-size: 12px;
+            .chat-name {
+                font-weight: 700;
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .chat-time {
+                font-size: 11px;
                 color: var(--muted);
+                flex-shrink: 0;
+            }
+
+            .chat-msg {
+                font-size: 13px;
+                color: var(--muted);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .chat-arrow {
                 color: var(--accent);
-                font-size: 20px;
-                opacity: 0.6;
+                opacity: 0.5;
+                flex-shrink: 0;
                 transition:
                     opacity 0.2s,
                     transform 0.2s;
             }
-            .user-card:hover .chat-arrow {
+            .chat-item:hover .chat-arrow {
                 opacity: 1;
                 transform: translateX(3px);
             }
 
+            /* ── Empty state ── */
             .empty-state {
                 text-align: center;
-                padding: 40px 20px;
+                padding: 60px 20px;
                 color: var(--muted);
                 font-size: 14px;
             }
             .empty-state .emoji {
-                font-size: 40px;
-                margin-bottom: 10px;
+                font-size: 48px;
+                margin-bottom: 12px;
+            }
+            .empty-state p {
+                margin-bottom: 20px;
+            }
+            .empty-cta {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 11px 22px;
+                background: var(--accent);
+                color: #fff;
+                border-radius: 12px;
+                font-weight: 700;
+                font-size: 14px;
+                text-decoration: none;
+                transition:
+                    background 0.2s,
+                    box-shadow 0.2s;
+            }
+            .empty-cta:hover {
+                background: var(--accent-hover);
+                box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
             }
 
-            /* ──────────────────────────────
-           Bottom navigation bar
-        ────────────────────────────── */
+            /* ── Bottom navigation ── */
             .bottom-nav {
                 position: fixed;
                 bottom: 0;
@@ -333,7 +302,6 @@
                 align-items: stretch;
                 justify-content: center;
                 z-index: 100;
-                /* safe-area for iPhone home indicator */
                 padding-bottom: env(safe-area-inset-bottom, 0px);
             }
             .nav-inner {
@@ -354,13 +322,13 @@
                 font-size: 11px;
                 font-weight: 600;
                 letter-spacing: 0.3px;
-                cursor: pointer;
                 border: none;
                 background: none;
                 font-family: inherit;
                 padding: 8px 0 10px;
                 position: relative;
                 transition: color 0.2s;
+                cursor: pointer;
                 -webkit-tap-highlight-color: transparent;
             }
             .nav-tab svg {
@@ -373,7 +341,6 @@
                 transform: translateY(-2px);
             }
 
-            /* Active indicator: pill on top */
             .nav-tab.active {
                 color: var(--accent);
             }
@@ -388,27 +355,16 @@
                 background: var(--accent);
                 border-radius: 0 0 4px 4px;
             }
-            /* Active icon gets a soft tinted background disc */
             .nav-tab.active .nav-icon-wrap {
                 background: rgba(99, 102, 241, 0.12);
                 border-radius: 10px;
                 padding: 4px 12px;
                 margin: -4px -12px;
             }
-
             .nav-icon-wrap {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-            }
-
-            @media (max-width: 480px) {
-                .search-btn .btn-label {
-                    display: none;
-                }
-                .search-btn {
-                    padding: 9px 14px;
-                }
             }
         </style>
     </head>
@@ -418,55 +374,113 @@
 
         <div class="container">
             <header>
-                <div class="topbar">
-                    <a class="logo" href="/">
-                        <div class="logo-icon">F</div>
-                        <span class="logo-name">Fch</span>
+                <a class="logo" href="/">
+                    <div class="logo-icon">F</div>
+                    <span class="logo-name">Fch</span>
+                </a>
+                <div class="header-right">
+                    <!-- Перейти к поиску -->
+                    <a href="/" class="icon-btn" title="Найти пользователя">
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                        </svg>
                     </a>
                     <button class="icon-btn" id="themeBtn" title="Сменить тему">
                         🌙
                     </button>
                 </div>
-
-                <form id="searchForm">
-                    <div class="search-wrap">
-                        <input
-                            id="searchInput"
-                            type="text"
-                            placeholder="Найти пользователя по username..."
-                            required
-                            autocomplete="off"
-                        />
-                        <button type="submit" class="search-btn">
-                            <svg
-                                width="15"
-                                height="15"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2.5"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                            <span class="btn-label">Найти</span>
-                        </button>
-                    </div>
-                </form>
-
-                <div class="status-bar" id="statusLabel"></div>
             </header>
 
-            <main id="resultsList"></main>
+            <div class="page-title">Мои чаты</div>
+
+            <div class="chat-list">
+                {{$me := .MyID}} {{range .Chats}} {{$otherUser := ""}} {{range
+                .Participants}} {{if ne .UserID $me}}{{$otherUser =
+                .User.Username}}{{end}} {{end}}
+
+                <a
+                    href="/chat/{{.ID}}"
+                    class="chat-item"
+                    style="animation-delay:{{mul .ID 40}}ms"
+                >
+                    <div class="avatar">
+                        {{if $otherUser}}{{slice $otherUser 0
+                        1}}{{else}}?{{end}}
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-top">
+                            <span class="chat-name">
+                                {{if $otherUser}}{{$otherUser}}{{else}}Чат
+                                {{.ID}}{{end}}
+                            </span>
+                            <span class="chat-time"
+                                >{{.UpdatedAt.Format "15:04"}}</span
+                            >
+                        </div>
+                        <div class="chat-msg">
+                            {{if .Messages}} {{(index .Messages 0).Content}}
+                            {{else}}
+                            <span style="font-style: italic"
+                                >Сообщений пока нет</span
+                            >
+                            {{end}}
+                        </div>
+                    </div>
+                    <span class="chat-arrow">
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="m9 18 6-6-6-6" />
+                        </svg>
+                    </span>
+                </a>
+
+                {{else}}
+                <div class="empty-state">
+                    <div class="emoji">💬</div>
+                    <p>У вас пока нет активных чатов</p>
+                    <a href="/" class="empty-cta">
+                        <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                        </svg>
+                        Найти пользователя
+                    </a>
+                </div>
+                {{end}}
+            </div>
         </div>
 
-        <!-- ── Bottom Nav ── -->
+        <!-- ── Bottom Nav (Мои чаты active) ── -->
         <nav class="bottom-nav" aria-label="Основная навигация">
             <div class="nav-inner">
-                <!-- Поиск (active) -->
-                <a href="/" class="nav-tab active" title="Поиск пользователей">
+                <a href="/" class="nav-tab" title="Поиск пользователей">
                     <span class="nav-icon-wrap">
                         <svg
                             width="22"
@@ -485,8 +499,7 @@
                     Поиск
                 </a>
 
-                <!-- Мои чаты -->
-                <a href="/my-chats" class="nav-tab" title="Мои чаты">
+                <a href="/my-chats" class="nav-tab active" title="Мои чаты">
                     <span class="nav-icon-wrap">
                         <svg
                             width="22"
@@ -509,83 +522,13 @@
         </nav>
 
         <script>
-            const resultsList = document.getElementById("resultsList");
-            const statusLabel = document.getElementById("statusLabel");
-            const searchInput = document.getElementById("searchInput");
-            const themeBtn = document.getElementById("themeBtn");
-
-            function renderResults(data) {
-                resultsList.innerHTML = "";
-                const users = Array.isArray(data)
-                    ? data
-                    : data.ID
-                      ? [data]
-                      : [];
-                if (users.length === 0) {
-                    resultsList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="emoji">🔍</div>
-                        <p>Пользователь не найден</p>
-                    </div>`;
-                    return;
-                }
-                resultsList.innerHTML = users
-                    .map(
-                        (user, i) => `
-                <a href="/chat/${user.ID}" class="user-card" style="animation-delay:${i * 60}ms">
-                    <div class="avatar">${user.Username[0]}</div>
-                    <div class="user-info">
-                        <b>${user.Username}</b>
-                        <span>Начать чат</span>
-                    </div>
-                    <span class="chat-arrow">→</span>
-                </a>
-            `,
-                    )
-                    .join("");
-            }
-
-            async function performSearch(username) {
-                try {
-                    statusLabel.className = "status-bar loading";
-                    statusLabel.textContent = "Поиск...";
-                    resultsList.innerHTML = "";
-                    const response = await fetch(
-                        `/search/${encodeURIComponent(username)}`,
-                        {
-                            method: "GET",
-                            headers: { Accept: "application/json" },
-                        },
-                    );
-                    if (response.status === 404) {
-                        statusLabel.className = "status-bar";
-                        statusLabel.textContent = "";
-                        renderResults([]);
-                        return;
-                    }
-                    if (!response.ok) throw new Error("Ошибка сервера");
-                    const userData = await response.json();
-                    renderResults(userData);
-                    statusLabel.className = "status-bar";
-                    statusLabel.textContent = "Результаты:";
-                } catch (err) {
-                    console.error(err);
-                    statusLabel.className = "status-bar";
-                    statusLabel.textContent = "Не удалось выполнить поиск";
-                }
-            }
-
-            document.getElementById("searchForm").onsubmit = (e) => {
-                e.preventDefault();
-                const query = searchInput.value.trim();
-                if (query) performSearch(query);
-            };
-
-            themeBtn.onclick = () => {
+            document.getElementById("themeBtn").onclick = () => {
                 const html = document.documentElement;
                 const isDark = html.dataset.theme === "dark";
                 html.dataset.theme = isDark ? "light" : "dark";
-                themeBtn.textContent = isDark ? "🌙" : "☀️";
+                document.getElementById("themeBtn").textContent = isDark
+                    ? "🌙"
+                    : "☀️";
             };
         </script>
     </body>

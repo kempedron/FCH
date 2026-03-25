@@ -107,6 +107,8 @@ func (g *APIGateway) setRoutes() {
 
 	protected := g.router.PathPrefix("/").Subrouter()
 	protected.HandleFunc("/", g.proxyToWebService).Methods("GET")
+	protected.HandleFunc("/my-chats", g.proxyToChatService).Methods("GET")
+
 	protected.HandleFunc("/chat/{userID}", g.proxyToChatService).Methods("GET")
 	protected.HandleFunc("/chat/{chatID}/send", g.proxyWebSocket("chat-service"))
 

@@ -3,114 +3,368 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Fch — Login</title>
-
+        <title>Fch — Регистрация</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
         <style>
             :root {
-                --bg: #f7f9fb;
-                --card: #fff;
-                --text: #1f2933;
-                --accent: #4f46e5;
-                --border: #e5e7eb;
+                --bg: #f0f2ff;
+                --card: #ffffff;
+                --text: #1a1d2e;
+                --muted: #6b7280;
+                --accent: #4338ca;
+                --accent-hover: #3730a3;
+                --accent-soft: #ede9fe;
+                --border: #e0e3f0;
+                --input-bg: #f7f8ff;
+                --shadow: 0 8px 32px rgba(67, 56, 202, 0.1);
+                --error: #ef4444;
+                --success: #22c55e;
             }
             [data-theme="dark"] {
-                --bg: #0f172a;
-                --card: #1e293b;
-                --text: #e5e7eb;
+                --bg: #0d0f1e;
+                --card: #161929;
+                --text: #e8eaf6;
+                --muted: #8b91b5;
                 --accent: #6366f1;
-                --border: #334155;
+                --accent-hover: #818cf8;
+                --accent-soft: #1e2040;
+                --border: #252844;
+                --input-bg: #1a1d35;
+                --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+                --error: #f87171;
+                --success: #4ade80;
+            }
+
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
             }
 
             body {
-                margin: 0;
-                font-family: sans-serif;
+                font-family: "Plus Jakarta Sans", sans-serif;
                 background: var(--bg);
                 color: var(--text);
+                min-height: 100dvh;
                 display: flex;
-                justify-content: center;
                 align-items: center;
-                height: 100vh;
+                justify-content: center;
+                padding: 16px;
+                position: relative;
+                overflow: hidden;
+                transition:
+                    background 0.3s,
+                    color 0.3s;
+            }
+
+            body::before,
+            body::after {
+                content: "";
+                position: fixed;
+                border-radius: 50%;
+                filter: blur(80px);
+                opacity: 0.35;
+                pointer-events: none;
+            }
+            body::before {
+                width: 400px;
+                height: 400px;
+                background: radial-gradient(circle, #818cf8, transparent);
+                top: -120px;
+                right: -80px;
+            }
+            body::after {
+                width: 300px;
+                height: 300px;
+                background: radial-gradient(circle, #6366f1, transparent);
+                bottom: -80px;
+                left: -60px;
+            }
+
+            .theme-toggle {
+                position: fixed;
+                top: 16px;
+                right: 16px;
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 18px;
+                transition: transform 0.2s;
+                z-index: 10;
+            }
+            .theme-toggle:hover {
+                transform: scale(1.1);
             }
 
             .card {
                 width: 100%;
-                max-width: 320px;
-                padding: 20px;
-                border-radius: 12px;
+                max-width: 360px;
                 background: var(--card);
                 border: 1px solid var(--border);
+                border-radius: 20px;
+                padding: 36px 32px;
+                box-shadow: var(--shadow);
                 display: flex;
                 flex-direction: column;
+                gap: 0;
+                position: relative;
+                z-index: 1;
+                animation: slideUp 0.4s ease both;
+            }
+
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(24px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .logo {
+                display: flex;
+                align-items: center;
                 gap: 10px;
+                margin-bottom: 28px;
+            }
+            .logo-icon {
+                width: 40px;
+                height: 40px;
+                background: var(--accent);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-size: 20px;
+                font-weight: 700;
+            }
+            .logo-text {
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: -0.5px;
+            }
+
+            .card-title {
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 4px;
+            }
+            .card-subtitle {
+                font-size: 13px;
+                color: var(--muted);
+                margin-bottom: 24px;
+            }
+
+            .field {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                margin-bottom: 14px;
+            }
+            label {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--muted);
+                letter-spacing: 0.3px;
             }
 
             input {
-                padding: 10px;
-                border-radius: 8px;
-                border: 1px solid var(--border);
-                background: var(--card);
+                width: 100%;
+                padding: 11px 14px;
+                border-radius: 10px;
+                border: 1.5px solid var(--border);
+                background: var(--input-bg);
                 color: var(--text);
+                font-family: inherit;
+                font-size: 14px;
+                outline: none;
+                transition:
+                    border-color 0.2s,
+                    box-shadow 0.2s;
+            }
+            input:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            }
+            input::placeholder {
+                color: var(--muted);
+                opacity: 0.7;
             }
 
-            button {
-                padding: 10px;
+            .btn {
+                width: 100%;
+                padding: 12px;
                 border: none;
-                border-radius: 8px;
+                border-radius: 10px;
                 background: var(--accent);
                 color: #fff;
+                font-family: inherit;
+                font-size: 15px;
+                font-weight: 700;
                 cursor: pointer;
+                margin-top: 6px;
+                transition:
+                    background 0.2s,
+                    transform 0.15s,
+                    box-shadow 0.2s;
+            }
+            .btn:hover {
+                background: var(--accent-hover);
+                box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+            }
+            .btn:active {
+                transform: scale(0.98);
+            }
+            .btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
             }
 
             .status {
-                font-size: 14px;
+                min-height: 20px;
+                font-size: 13px;
                 text-align: center;
+                margin-top: 10px;
+                transition: all 0.2s;
+            }
+            .status.error {
+                color: var(--error);
+            }
+            .status.success {
+                color: var(--success);
+            }
+
+            .divider {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin: 18px 0 16px;
+                color: var(--muted);
+                font-size: 12px;
+            }
+            .divider::before,
+            .divider::after {
+                content: "";
+                flex: 1;
+                height: 1px;
+                background: var(--border);
+            }
+
+            .alt-link {
+                text-align: center;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .alt-link a {
+                color: var(--accent);
+                font-weight: 600;
+                text-decoration: none;
+            }
+            .alt-link a:hover {
+                text-decoration: underline;
             }
         </style>
     </head>
-
     <body>
-        <form class="card" id="form">
-            <h3>Регистрация</h3>
+        <button class="theme-toggle" id="themeBtn" title="Сменить тему">
+            🌙
+        </button>
 
-            <input name="username" placeholder="Username" required />
-            <input
-                name="password"
-                type="password"
-                placeholder="Password"
-                required
-            />
+        <form class="card" id="form" autocomplete="on">
+            <div class="logo">
+                <div class="logo-icon">F</div>
+                <span class="logo-text">Fch</span>
+            </div>
 
-            <button>Войти</button>
+            <div class="card-title">Создать аккаунт</div>
+            <div class="card-subtitle">Присоединяйтесь — это бесплатно</div>
 
+            <div class="field">
+                <label for="username">Имя пользователя</label>
+                <input
+                    id="username"
+                    name="username"
+                    placeholder="username"
+                    required
+                    autocomplete="username"
+                />
+            </div>
+            <div class="field">
+                <label for="password">Пароль</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    autocomplete="new-password"
+                />
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                Зарегистрироваться
+            </button>
             <div class="status" id="status"></div>
+
+            <div class="divider">или</div>
+            <div class="alt-link">
+                Уже есть аккаунт? <a href="/login">Войти</a>
+            </div>
         </form>
 
         <script>
             const form = document.getElementById("form");
             const status = document.getElementById("status");
+            const submitBtn = document.getElementById("submitBtn");
 
             form.onsubmit = async (e) => {
                 e.preventDefault();
-
                 const data = Object.fromEntries(new FormData(form));
-
                 try {
-                    status.textContent = "Регистрация";
-
+                    status.className = "status";
+                    status.textContent = "Создаём аккаунт...";
+                    submitBtn.disabled = true;
                     const res = await fetch("/register", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(data),
                         credentials: "include",
                     });
-
                     if (!res.ok) throw new Error();
-
-                    status.textContent = "Успешно";
+                    status.className = "status success";
+                    status.textContent = "✓ Аккаунт создан!";
                     window.location.href = "/";
                 } catch {
-                    status.textContent = "Ошибка регистрации";
+                    status.className = "status error";
+                    status.textContent =
+                        "Ошибка регистрации. Попробуйте другой username.";
+                    submitBtn.disabled = false;
                 }
+            };
+
+            document.getElementById("themeBtn").onclick = () => {
+                const html = document.documentElement;
+                const isDark = html.dataset.theme === "dark";
+                html.dataset.theme = isDark ? "light" : "dark";
+                document.getElementById("themeBtn").textContent = isDark
+                    ? "🌙"
+                    : "☀️";
             };
         </script>
     </body>
