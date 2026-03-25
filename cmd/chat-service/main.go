@@ -39,7 +39,7 @@ func main() {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
 	tmpl := InitTemplates()
-	r.HandleFunc("/chat/{userID}", handler.MakeHandlerForChat(tmpl))
+	r.HandleFunc("/chat/{userID:[0-9]+}", handler.MakeHandlerForChat(tmpl))
 	r.HandleFunc("/chat/{chatID}/send", handler.SendMessage)
 	///chat/{chatID}/send
 	http.ListenAndServe(":8080", r)

@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Чат — {{.Chat.ID}}</title>
+        <title>Чат</title>
         <style>
             :root {
                 --bg: #f7f9fb;
@@ -56,7 +56,6 @@
                 text-decoration: none;
                 color: var(--accent);
                 font-size: 20px;
-                padding: 4px 8px;
             }
             .chat-info {
                 flex: 1;
@@ -75,7 +74,7 @@
                 width: 240px;
                 border-right: 1px solid var(--border);
                 background: var(--card);
-                transition: width 0.3s ease;
+                transition: width 0.3s;
             }
             .sidebar.hidden {
                 width: 0;
@@ -113,7 +112,6 @@
                 border-radius: 14px;
                 font-size: 14px;
                 line-height: 1.4;
-                position: relative;
             }
             .msg.in .bubble {
                 background: var(--bubble-in);
@@ -154,6 +152,7 @@
                 background: var(--accent);
                 color: #fff;
                 cursor: pointer;
+                font-weight: 600;
             }
             .empty {
                 flex: 1;
@@ -169,8 +168,8 @@
         <header>
             <a href="/" class="back-btn">←</a>
             <div class="chat-info">
-                <h2>Чат #{{.Chat.ID}}</h2>
-                <span>{{len .Chat.Participants}} участников</span>
+                <h2 id="chatTitle">Чат #{{.Chat.ID}}</h2>
+                <span id="statusText">Загрузка...</span>
             </div>
             <div class="header-actions">
                 <button
@@ -229,6 +228,7 @@
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
+                                font-size: 12px;
                             "
                         >
                             {{firstChar .User.Username}}
@@ -259,7 +259,7 @@
                 <div class="input-bar">
                     <textarea
                         id="msgInput"
-                        placeholder="Сообщение..."
+                        placeholder="Напишите сообщение..."
                         rows="1"
                     ></textarea>
                     <button class="send-btn" id="sendBtn">Отправить</button>
@@ -268,22 +268,28 @@
         </div>
 
         <script>
-            // Парсим данные из шаблона безопасно
+            // Инициализация данных из Go
             const myID = Number("{{.MyID}}");
-            const chatID = "{{.Chat.ID}}";
+            const chatID = Number("{{.Chat.ID}}");
 
-            // Участники для определения получателя
+            // Проверка на ошибку рендеринга
+            if (chatID === 0) {
+                console.error("CRITICAL ERROR: Chat ID is 0. Check Go Handler logic.");
+                document.getElementById("statusText").innerText = "Ошибка ID чата";
+            }
+
+            // Определение получателя
             const participants = [
-                {{range .Chat.Participants}}{ id: {{.UserID}}, username: "{{.User.Username}}" },{{end}}
+                {{range .Chat.Participants}}{ id: Number("{{.UserID}}") },{{end}}
             ];
+            const opponent = participants.find(p => p.id !== myID);
+            const recipientID = opponent ? opponent.id : 0;
 
-            const recipient = participants.find(p => Number(p.id) !== myID);
-            const recipientID = recipient ? recipient.id : 0;
+            console.log(`Debug: MyID=${myID}, ChatID=${chatID}, RecipientID=${recipientID}`);
 
-            // WebSocket
+            // WebSocket через Gateway
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const socketURL = `${protocol}//${window.location.host}/chat/${chatID}/send`;
-            console.log("Connecting to:", socketURL);
             const socket = new WebSocket(socketURL);
 
             const messagesContainer = document.getElementById("messages");
@@ -292,41 +298,37 @@
 
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            socket.onopen = () => console.log("WebSocket connected");
-            socket.onerror = (err) => console.error("WebSocket error:", err);
-            socket.onclose = () => console.warn("WebSocket closed");
+            socket.onopen = () => {
+                console.log("WS Connected");
+                document.getElementById("statusText").innerText = "В сети";
+            };
 
-            socket.onmessage = function(event) {
+            socket.onclose = () => {
+                document.getElementById("statusText").innerText = "Соединение закрыто";
+            };
+
+            socket.onmessage = (event) => {
                 try {
-                    console.log("New message received:", event.data);
                     const msg = JSON.parse(event.data);
                     appendMessage(msg);
-                } catch (e) {
-                    console.error("Parsing error:", e);
-                }
+                } catch (e) { console.error("Parse error", e); }
             };
 
             function appendMessage(msg) {
-                // Пытаемся найти контент в разных полях (зависит от JSON-тегов в Go)
                 const sID = msg.sender_id || msg.SenderID || msg.AuthorID;
                 const content = msg.content || msg.Content;
-
                 if (!content) return;
 
                 const isMine = Number(sID) === myID;
                 const msgDiv = document.createElement("div");
                 msgDiv.className = `msg ${isMine ? 'out' : 'in'}`;
 
-                const rawTime = msg.created_at || msg.CreatedAt;
-                const timeStr = rawTime ? new Date(rawTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-                msgDiv.innerHTML = `
-                    <div class="bubble">${content}</div>
-                    <div class="time">${timeStr}</div>
-                `;
+                msgDiv.innerHTML = `<div class="bubble">${content}</div><div class="time">${timeStr}</div>`;
 
-                const emptyMsg = messagesContainer.querySelector('.empty');
-                if (emptyMsg) emptyMsg.remove();
+                const empty = messagesContainer.querySelector('.empty');
+                if (empty) empty.remove();
 
                 messagesContainer.appendChild(msgDiv);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -334,36 +336,19 @@
 
             function sendMsg() {
                 const content = msgInput.value.trim();
+                if (!content || socket.readyState !== WebSocket.OPEN) return;
 
-                if (!content) return;
-
-                if (socket.readyState !== WebSocket.OPEN) {
-                    console.error("Socket not open. State:", socket.readyState);
-                    return;
-                }
-
-                const data = {
-                    recipient_id: Number(recipientID),
+                const payload = {
+                    recipient_id: recipientID,
                     content: content
                 };
 
-                console.log("Sending JSON:", data);
-                socket.send(JSON.stringify(data));
+                socket.send(JSON.stringify(payload));
                 msgInput.value = "";
             }
 
-            sendBtn.onclick = (e) => {
-                e.preventDefault();
-                sendMsg();
-            };
-
-            msgInput.onkeydown = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMsg();
-                }
-            };
-
+            sendBtn.onclick = sendMsg;
+            msgInput.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } };
             document.getElementById("sidebarToggle").onclick = () => document.getElementById("sidebar").classList.toggle("hidden");
             document.getElementById("themeBtn").onclick = () => {
                 const html = document.documentElement;

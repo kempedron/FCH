@@ -5,7 +5,6 @@ import (
 	"FCH/internal/middleware"
 	"FCH/internal/models"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -16,11 +15,31 @@ import (
 func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		chatID := vars["userID"]
+		opponentIDStr := vars["userID"]
+		opponentID, _ := strconv.ParseUint(opponentIDStr, 10, 32)
 		myID, _ := middleware.GetUserIDFromRequest(r)
 
 		var chat models.Chat
-		database.DB.Preload("Participants.User").Preload("Messages").First(&chat, chatID)
+
+		// Ищем чат, в котором участвуют и MyID, и OpponentID
+		err := database.DB.Table("chats").
+			Joins("JOIN chat_particiants p1 ON p1.chat_id = chats.id").
+			Joins("JOIN chat_particiants p2 ON p2.chat_id = chats.id").
+			Where("p1.user_id = ? AND p2.user_id = ? AND p1.is_group = ?", myID, opponentID, false).
+			First(&chat).Error
+
+		if err != nil {
+			// Если чата нет — создаем его
+			chat = models.Chat{Name: "Private Chat"}
+			database.DB.Create(&chat)
+
+			// Сразу добавляем обоих участников
+			database.DB.Create(&models.ChatParticiant{ChatID: chat.ID, UserID: uint(myID)})
+			database.DB.Create(&models.ChatParticiant{ChatID: chat.ID, UserID: uint(opponentID)})
+		}
+
+		// Подгружаем сообщения и данные юзеров для шаблона
+		database.DB.Preload("Participants.User").Preload("Messages").First(&chat, chat.ID)
 
 		data := map[string]interface{}{
 			"Chat": chat,
@@ -35,7 +54,9 @@ var upgrader = websocket.Upgrader{
 }
 
 func SendMessage(w http.ResponseWriter, r *http.Request) {
-	myID, _ := middleware.GetUserIDFromRequest(r)
+	// Явно приводим к uint
+	valID, _ := middleware.GetUserIDFromRequest(r)
+	myID := uint(valID)
 
 	vars := mux.Vars(r)
 	chatIDStr := vars["chatID"]
@@ -43,47 +64,44 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	chatHub.Register(uint(myID), conn)
+
+	// Регистрация именно как uint
+	chatHub.Register(myID, conn)
 
 	defer func() {
-		chatHub.Unregister(uint(myID))
+		chatHub.Unregister(myID)
 		conn.Close()
 	}()
 
 	for {
-
 		var msg ChatMessage
-
 		if err := conn.ReadJSON(&msg); err != nil {
-			log.Printf("Read error: %s", err)
 			break
 		}
+
 		dbMessage := models.Message{
 			ChatID:   uint(chatID),
-			AuthorID: uint(myID),
+			AuthorID: myID,
 			Content:  msg.Content,
 		}
-		if err := database.DB.Create(&dbMessage).Error; err != nil {
-			log.Printf("error save to DB: %s", err)
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			continue
-		}
+
+		database.DB.Create(&dbMessage)
+
 		broadcastMsg := ChatMessage{
 			ID:        dbMessage.ID,
 			ChatID:    dbMessage.ChatID,
 			SenderID:  dbMessage.AuthorID,
 			Content:   dbMessage.Content,
 			CreatedAt: dbMessage.CreatedAt,
-			Recipient: msg.Recipient,
+			Recipient: msg.Recipient, // Проверь, что тут не 0!
 		}
+
 		if broadcastMsg.Recipient != 0 {
 			chatHub.SendTo(broadcastMsg.Recipient, broadcastMsg)
 		}
+
 		conn.WriteJSON(broadcastMsg)
-
 	}
-
 }

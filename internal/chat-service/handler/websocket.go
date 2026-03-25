@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"sync"
 	"time"
 
@@ -31,11 +32,16 @@ type ChatMessage struct {
 }
 
 func (h *Hub) SendTo(recipient uint, msg ChatMessage) error {
+	log.Printf("Hub: Attempting to send message to UserID %d", recipient)
 	val, ok := h.clients.Load(recipient)
 	if !ok {
+		log.Printf("Hub: User %d not found in active clients map", recipient)
 		return nil
 	}
 	conn := val.(*websocket.Conn)
-	return conn.WriteJSON(msg)
-
+	err := conn.WriteJSON(msg)
+	if err != nil {
+		log.Printf("Hub: Error writing to JSON for user %d: %v", recipient, err)
+	}
+	return err
 }
