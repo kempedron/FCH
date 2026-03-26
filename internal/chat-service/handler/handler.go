@@ -23,7 +23,6 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 
 		var chat models.Chat
 
-		// Ищем чат, в котором участвуют и MyID, и OpponentID
 		err := database.DB.Table("chats").
 			Joins("JOIN chat_particiants p1 ON p1.chat_id = chats.id").
 			Joins("JOIN chat_particiants p2 ON p2.chat_id = chats.id").
@@ -31,16 +30,13 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 			First(&chat).Error
 
 		if err != nil {
-			// Если чата нет — создаем его
 			chat = models.Chat{Name: "Private Chat"}
 			database.DB.Create(&chat)
 
-			// Сразу добавляем обоих участников
-			database.DB.Create(&models.ChatParticiant{ChatID: chat.ID, UserID: uint(myID)})
-			database.DB.Create(&models.ChatParticiant{ChatID: chat.ID, UserID: uint(opponentID)})
+			database.DB.Create(&models.ChatParticipants{ChatID: chat.ID, UserID: uint(myID)})
+			database.DB.Create(&models.ChatParticipants{ChatID: chat.ID, UserID: uint(opponentID)})
 		}
 
-		// Подгружаем сообщения и данные юзеров для шаблона
 		database.DB.Preload("Participants.User").Preload("Messages").First(&chat, chat.ID)
 
 		data := map[string]interface{}{
@@ -56,7 +52,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func SendMessage(w http.ResponseWriter, r *http.Request) {
-	// Явно приводим к uint
 	valID, _ := middleware.GetUserIDFromRequest(r)
 	myID := uint(valID)
 
@@ -69,7 +64,6 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Регистрация именно как uint
 	chatHub.Register(myID, conn)
 
 	defer func() {
@@ -97,7 +91,7 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			SenderID:  dbMessage.AuthorID,
 			Content:   dbMessage.Content,
 			CreatedAt: dbMessage.CreatedAt,
-			Recipient: msg.Recipient, // Проверь, что тут не 0!
+			Recipient: msg.Recipient,
 		}
 
 		if broadcastMsg.Recipient != 0 {

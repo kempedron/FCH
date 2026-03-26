@@ -33,7 +33,7 @@ func InitDB() error {
 	err = DB.AutoMigrate(
 		&models.User{},
 		&models.Chat{},
-		&models.ChatParticiant{},
+		&models.ChatParticipants{},
 		&models.Message{},
 		&models.Attachment{},
 	)
