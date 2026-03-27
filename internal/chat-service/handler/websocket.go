@@ -45,3 +45,12 @@ func (h *Hub) SendTo(recipient uint, msg ChatMessage) error {
 	}
 	return err
 }
+
+func (h *Hub) BroadcastToChat(particiantsIDs []uint, msg ChatMessage, excludeSender uint) {
+	for _, participantID := range particiantsIDs {
+		if participantID == excludeSender {
+			continue
+		}
+		go h.SendTo(participantID, msg)
+	}
+}

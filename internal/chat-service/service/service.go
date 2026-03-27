@@ -86,18 +86,13 @@ func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 func GetMyChats(myID uint) ([]models.Chat, error) {
 	var chats []models.Chat
 	err := database.DB.
-		// Предзагружаем участников и их данные
 		Preload("Participants.User").
-		// Предзагружаем сообщения с сортировкой
 		Preload("Messages", func(db *gorm.DB) *gorm.DB {
 			return db.Order("messages.created_at DESC")
 		}).
-		// Используем Joins с условием, чтобы GORM понимал связь
 		Joins("JOIN chat_participants ON chat_participants.chat_id = chats.id").
-		// Явно указываем условия
 		Where("chat_participants.user_id = ?", myID).
 		Where("chat_participants.deleted_at IS NULL").
-		// Группируем или используем Distinct, чтобы избежать дублей
 		Distinct("chats.*").
 		Order("chats.updated_at DESC").
 		Find(&chats).Error

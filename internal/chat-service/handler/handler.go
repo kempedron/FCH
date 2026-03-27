@@ -12,34 +12,42 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"gorm.io/gorm"
 )
 
 func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		opponentIDStr := vars["userID"]
-		opponentID, _ := strconv.ParseUint(opponentIDStr, 10, 32)
+		chatID := uint(middleware.GetParamByUrl("chatID", r))
 		myID, _ := middleware.GetUserIDFromRequest(r)
 
 		var chat models.Chat
 
 		err := database.DB.Table("chats").
-			Joins("JOIN chat_particiants p1 ON p1.chat_id = chats.id").
-			Joins("JOIN chat_particiants p2 ON p2.chat_id = chats.id").
-			Where("p1.user_id = ? AND p2.user_id = ? AND p1.is_group = ?", myID, opponentID, false).
-			First(&chat).Error
+			Preload("Participants.User").
+			Preload("Messages", func(db *gorm.DB) *gorm.DB {
+				return db.Order("created_at ASC")
+			}).
+			First(&chat, uint(chatID)).Error
 
 		if err != nil {
-			chat = models.Chat{Name: "Private Chat"}
-			database.DB.Create(&chat)
-
-			database.DB.Create(&models.ChatParticipants{ChatID: chat.ID, UserID: uint(myID)})
-			database.DB.Create(&models.ChatParticipants{ChatID: chat.ID, UserID: uint(opponentID)})
+			http.Error(w, "chat not found", http.StatusNotFound)
+			return
 		}
 
-		database.DB.Preload("Participants.User").Preload("Messages").First(&chat, chat.ID)
+		isPartician := false
 
-		data := map[string]interface{}{
+		for _, p := range chat.Participants {
+			if p.UserID == uint(myID) {
+				isPartician = true
+				break
+			}
+		}
+		if !isPartician {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+
+		data := map[string]any{
 			"Chat": chat,
 			"MyID": myID,
 		}
@@ -58,6 +66,9 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	chatIDStr := vars["chatID"]
 	chatID, _ := strconv.ParseUint(chatIDStr, 10, 32)
+
+	var participants []models.ChatParticipants
+	database.DB.Where("chat_id = ? AND deleted_at IS NULL", chatID).Find(&participants)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -91,12 +102,13 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			SenderID:  dbMessage.AuthorID,
 			Content:   dbMessage.Content,
 			CreatedAt: dbMessage.CreatedAt,
-			Recipient: msg.Recipient,
 		}
 
-		if broadcastMsg.Recipient != 0 {
-			chatHub.SendTo(broadcastMsg.Recipient, broadcastMsg)
+		participantIDs := make([]uint, len(participants))
+		for i, p := range participants {
+			participantIDs[i] = p.UserID
 		}
+		chatHub.BroadcastToChat(participantIDs, broadcastMsg, myID)
 
 		conn.WriteJSON(broadcastMsg)
 	}
@@ -120,5 +132,19 @@ func MakeHandlerForMyChats(tmpl *template.Template) http.HandlerFunc {
 		}
 		fmt.Printf("Chats found: %d for UserID: %d\n", len(chats), MyID)
 		tmpl.ExecuteTemplate(w, "myChats.html", data)
+	}
+}
+
+func MakeHanlerForNewChat(tmpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opponentID := uint(middleware.GetParamByUrl("userID", r))
+		myID, _ := middleware.GetUserIDFromRequest(r)
+
+		chat, err := service.GetOrCreatePersonalChat(uint(myID), uint(opponentID))
+		if err != nil {
+			http.Error(w, "Failed to get chat", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
 	}
 }
