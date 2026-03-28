@@ -110,6 +110,7 @@ func (g *APIGateway) setRoutes() {
 	protected.HandleFunc("/my-chats", g.proxyToChatService).Methods("GET")
 
 	protected.HandleFunc("/chat/{userID}", g.proxyToChatService).Methods("GET")
+	protected.HandleFunc("/start-chat/{userID}", g.proxyToChatService).Methods("GET")
 	protected.HandleFunc("/chat/{chatID}/send", g.proxyWebSocket("chat-service"))
 
 	protected.Use(middleware.JWTAuth)

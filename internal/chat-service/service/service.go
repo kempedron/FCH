@@ -50,34 +50,29 @@ func CreateChat(userID uint, myID uint) (*models.Chat, error) {
 func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 	var chat models.Chat
 
-	err := database.DB.Table("chats").
-		Select("chats.*").
-		Joins("JOIN chat_participants p1 ON p1.chat_id = chats.id").
-		Joins("JOIN chat_participants p2 ON p2.chat_id = chats.id").
-		Where("p1.user_id = ? AND p2.user_id = ?", myID, opponentID).
-		Where("p1.is_group = ? AND p2.is_group = ?", false, false).
-		Where("p1.deleted_at IS NULL AND p2.deleted_at IS NULL AND chats.deleted_at IS NULL").
+	subquery := database.DB.Model(&models.ChatParticipants{}).
+		Select("chat_id").
+		Where("user_id IN ? AND is_group = ? AND deleted_at IS NULL", []uint{myID, opponentID}, false).
+		Group("chat_id").
+		Having("COUNT(DISTINCT user_id) = 2")
+	err := database.DB.
+		Preload("Participants.User").
+		Preload("Messages").
+		Where("id IN (?)", subquery).
 		First(&chat).Error
-
 	if err == nil {
 		return &chat, nil
 	}
-
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			newChat := models.Chat{Name: "Personal Chat"}
-			if err := database.DB.Create(&newChat).Error; err != nil {
-				return nil, err
-			}
-
-			p1 := models.ChatParticipants{ChatID: newChat.ID, UserID: myID, IsGroup: false}
-			p2 := models.ChatParticipants{ChatID: newChat.ID, UserID: opponentID, IsGroup: false}
-			database.DB.Create(&p1)
-			database.DB.Create(&p2)
-
-			return &newChat, nil
+	if err == gorm.ErrRecordNotFound {
+		newChat := models.Chat{Name: "Personal Chat"}
+		if err := database.DB.Create(&newChat).Error; err != nil {
+			return nil, err
 		}
-		return nil, err
+		p1 := models.ChatParticipants{ChatID: newChat.ID, UserID: myID, IsGroup: false}
+		p2 := models.ChatParticipants{ChatID: newChat.ID, UserID: opponentID, IsGroup: false}
+		database.DB.Create(&p1)
+		database.DB.Create(&p2)
+		return &newChat, nil
 	}
 
 	return &chat, nil
@@ -97,4 +92,18 @@ func GetMyChats(myID uint) ([]models.Chat, error) {
 		Order("chats.updated_at DESC").
 		Find(&chats).Error
 	return chats, err
+}
+
+func IsChatExist(myID, opponentID uint) (bool, models.Chat) {
+	var chat models.Chat
+	err := database.DB.Table("chats").
+		Select("chats.*").
+		Joins("JOIN chat_participants p1 ON p1.chat_id = chats.id").
+		Joins("JOIN chat_participants p2 ON p2.chat_id = chats.id").
+		Where("((p1.user_id = ? AND p2.user_id = ?) OR (p1.user_id = ? AND p2.user_id = ?))",
+			myID, opponentID, opponentID, myID).
+		Where("p1.is_group = ? AND p2.is_group = ?", false, false).
+		Where("p1.deleted_at IS NULL AND p2.deleted_at IS NULL AND chats.deleted_at IS NULL").
+		First(&chat).Error
+	return err == nil, chat
 }

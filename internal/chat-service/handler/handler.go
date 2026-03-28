@@ -30,22 +30,26 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 			First(&chat, uint(chatID)).Error
 
 		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				MakeHanlerForNewChat(tmpl)(w, r)
+				return
+			}
 			http.Error(w, "chat not found", http.StatusNotFound)
 			return
 		}
 
-		isPartician := false
+		// isPartician := false
 
-		for _, p := range chat.Participants {
-			if p.UserID == uint(myID) {
-				isPartician = true
-				break
-			}
-		}
-		if !isPartician {
-			http.Error(w, "Access denied", http.StatusForbidden)
-			return
-		}
+		// for _, p := range chat.Participants {
+		// 	if p.UserID == uint(myID) {
+		// 		isPartician = true
+		// 		break
+		// 	}
+		// }
+		// if !isPartician {
+		// 	http.Error(w, "Access denied", http.StatusForbidden)
+		// 	return
+		// }
 
 		data := map[string]any{
 			"Chat": chat,
@@ -139,6 +143,10 @@ func MakeHanlerForNewChat(tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		opponentID := uint(middleware.GetParamByUrl("userID", r))
 		myID, _ := middleware.GetUserIDFromRequest(r)
+
+		if exist, chat := service.IsChatExist(myID, opponentID); exist {
+			http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
+		}
 
 		chat, err := service.GetOrCreatePersonalChat(uint(myID), uint(opponentID))
 		if err != nil {

@@ -532,7 +532,7 @@
                 resultsList.innerHTML = users
                     .map(
                         (user, i) => `
-                <a href="/chat/${user.ID}" class="user-card" style="animation-delay:${i * 60}ms">
+                <a href="/start-chat/${user.ID}" class="user-card" style="animation-delay:${i * 60}ms">
                     <div class="avatar">${user.Username[0]}</div>
                     <div class="user-info">
                         <b>${user.Username}</b>
