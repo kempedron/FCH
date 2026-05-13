@@ -34,12 +34,13 @@ func (u *User) CheckPassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
 }
 
-// PERSONAL CHAT(1x1)
 type Chat struct {
 	gorm.Model
 	Name         string             `gorm:"type:varchar(255)" json:"name"`
 	Participants []ChatParticipants `gorm:"foreignKey:ChatID"`
 	Messages     []Message          `gorm:"foreignKey:ChatID"`
+	IsGroup      bool               `gorm:"type:boolean;not null;default:false"`
+	CreatorID    uint               `json:"creator_id"`
 }
 
 func (Chat) TableName() string {
@@ -51,7 +52,6 @@ type ChatParticipants struct {
 	ChatID     uint   `gorm:"type:index;not null"`
 	UserID     uint   `gorm:"type:index;not null"`
 	Role       string `gorm:"type:varchar(255);not null;default:'member'"`
-	IsGroup    bool   `gorm:"type:boolean;not null;default:false"`
 	LastReadAt time.Time
 	Chat       Chat `gorm:"foreignKey:ChatID"`
 	User       User `gorm:"foreignKey:UserID"`

@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func GetChatInfo(username string, myID uint) (*models.Chat, error) {
@@ -40,7 +41,7 @@ func CreateChat(userID uint, myID uint) (*models.Chat, error) {
 	}
 	chat := &models.Chat{
 		Name:         username,
-		Participants: []models.ChatParticipants{{UserID: userID, IsGroup: false}, {UserID: myID, IsGroup: false}},
+		Participants: []models.ChatParticipants{{UserID: userID}, {UserID: myID}},
 		Messages:     []models.Message{},
 	}
 	err := database.DB.Create(chat).Error
@@ -68,8 +69,8 @@ func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 		if err := database.DB.Create(&newChat).Error; err != nil {
 			return nil, err
 		}
-		p1 := models.ChatParticipants{ChatID: newChat.ID, UserID: myID, IsGroup: false}
-		p2 := models.ChatParticipants{ChatID: newChat.ID, UserID: opponentID, IsGroup: false}
+		p1 := models.ChatParticipants{ChatID: newChat.ID, UserID: myID}
+		p2 := models.ChatParticipants{ChatID: newChat.ID, UserID: opponentID}
 		database.DB.Create(&p1)
 		database.DB.Create(&p2)
 		return &newChat, nil
@@ -106,4 +107,24 @@ func IsChatExist(myID, opponentID uint) (bool, models.Chat) {
 		Where("p1.deleted_at IS NULL AND p2.deleted_at IS NULL AND chats.deleted_at IS NULL").
 		First(&chat).Error
 	return err == nil, chat
+}
+
+func AddUserToGroupChat(userID uint, groupChatID uint) error {
+	var chat models.Chat
+
+	if err := database.DB.First(&chat, groupChatID).Error; err != nil {
+		return err
+	}
+
+	if !chat.IsGroup {
+		return errors.New("нельзя добавить пользователя в личный чат напрямую")
+	}
+
+	newParticipant := models.ChatParticipants{
+		ChatID: groupChatID,
+		UserID: userID,
+		Role:   "member",
+	}
+
+	return database.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newParticipant).Error
 }

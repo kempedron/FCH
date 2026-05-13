@@ -5,8 +5,10 @@ import (
 	"FCH/internal/database"
 	"FCH/internal/middleware"
 	"FCH/internal/models"
+	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -37,19 +39,6 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 			http.Error(w, "chat not found", http.StatusNotFound)
 			return
 		}
-
-		// isPartician := false
-
-		// for _, p := range chat.Participants {
-		// 	if p.UserID == uint(myID) {
-		// 		isPartician = true
-		// 		break
-		// 	}
-		// }
-		// if !isPartician {
-		// 	http.Error(w, "Access denied", http.StatusForbidden)
-		// 	return
-		// }
 
 		data := map[string]any{
 			"Chat": chat,
@@ -155,4 +144,80 @@ func MakeHanlerForNewChat(tmpl *template.Template) http.HandlerFunc {
 		}
 		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
 	}
+}
+
+func MakeHanderForCreateNewGroupChat(tmp *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			tmp.ExecuteTemplate(w, "create_group.html", nil)
+			return
+		}
+
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
+			return
+		}
+
+		groupName := r.FormValue("group_name")
+
+		userID, err := middleware.GetUserIDFromRequest(r)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		var groupID uint
+
+		err = database.DB.Transaction(func(tx *gorm.DB) error {
+			newChat := models.Chat{
+				Name:      groupName,
+				IsGroup:   true,
+				CreatorID: userID,
+			}
+
+			if err := tx.Create(&newChat).Error; err != nil {
+				return err
+			}
+
+			participant := models.ChatParticipants{
+				ChatID: newChat.ID,
+				UserID: userID,
+				Role:   "admin",
+			}
+
+			if err := tx.Create(&participant).Error; err != nil {
+				return err
+			}
+
+			groupID = newChat.ID
+
+			return nil
+		})
+
+		if err != nil {
+			http.Error(w, "Не удалось создать группу", http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupID), 10), http.StatusFound)
+	}
+}
+
+func JoinToGroupChat(w http.ResponseWriter, r *http.Request) {
+	groupChatID := uint(middleware.GetParamByUrl("groupID", r))
+	userID, err := middleware.GetUserIDFromRequest(r)
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	err = service.AddUserToGroupChat(userID, groupChatID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Group not found", http.StatusNotFound)
+		} else {
+			log.Printf("error: %s", err)
+			http.Error(w, "Failed to join", http.StatusInternalServerError)
+		}
+		return
+
+	}
+	http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupChatID), 10), http.StatusFound)
 }

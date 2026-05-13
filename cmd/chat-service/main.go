@@ -45,6 +45,8 @@ func main() {
 	r.HandleFunc("/chat/{chatID:[0-9]+}", handler.MakeHandlerForChat(tmpl))
 	r.HandleFunc("/chat/{chatID}/send", handler.SendMessage)
 	r.HandleFunc("/start-chat/{userID:[0-9]+}", handler.MakeHanlerForNewChat(tmpl))
+	r.HandleFunc("/group-chat/join-to-chat/{groupID}", handler.JoinToGroupChat)
+	r.HandleFunc("/group-chat/create", handler.MakeHanderForCreateNewGroupChat(tmpl))
 	r.HandleFunc("/my-chats", handler.MakeHandlerForMyChats(tmpl))
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

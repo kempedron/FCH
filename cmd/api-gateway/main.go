@@ -112,6 +112,8 @@ func (g *APIGateway) setRoutes() {
 	protected.HandleFunc("/chat/{userID}", g.proxyToChatService).Methods("GET")
 	protected.HandleFunc("/start-chat/{userID}", g.proxyToChatService).Methods("GET")
 	protected.HandleFunc("/chat/{chatID}/send", g.proxyWebSocket("chat-service"))
+	protected.HandleFunc("/group-chat/join-to-chat/{groupID}", g.proxyToChatService).Methods("GET")
+	protected.HandleFunc("/group-chat/create", g.proxyToChatService)
 
 	protected.Use(middleware.JWTAuth)
 
