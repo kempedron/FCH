@@ -11,7 +11,17 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/koding/websocketproxy"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+// @title           FCH API
+// @version         1.0
+// @description     API Gateway for FCH messenger. All protected routes require JWT cookie.
+// @host            localhost:8080
+// @BasePath        /
+// @securityDefinitions.apikey JWT
+// @in cookie
+// @name jwt
 
 type Config struct {
 	Port           string
@@ -65,14 +75,37 @@ func (g *APIGateway) proxyToService(serviceName string) http.HandlerFunc {
 	}
 }
 
+// @Summary      Chat service proxy
+// @Description  Proxies chat-related requests (chats, messages, groups)
+// @Tags         chat
+// @Produce      json
+// @Router       /chat/{id} [get]
+// @Router       /my-chats [get]
+// @Router       /start-chat/{userID} [get]
+// @Router       /group-chat/create [get]
+// @Router       /group-chat/create [post]
+// @Router       /group-chat/join-to-chat/{groupID} [get]
 func (g *APIGateway) proxyToChatService(w http.ResponseWriter, r *http.Request) {
 	g.proxyToService("chat-service")(w, r)
 }
 
+// @Summary      User service proxy
+// @Description  Proxies user-related requests (login, register, search)
+// @Tags         user
+// @Produce      json
+// @Router       /login [get]
+// @Router       /login [post]
+// @Router       /register [get]
+// @Router       /register [post]
+// @Router       /search/{username} [get]
 func (g *APIGateway) proxyToUserService(w http.ResponseWriter, r *http.Request) {
 	g.proxyToService("user-service")(w, r)
 }
 
+// @Summary      Web service proxy
+// @Description  Serves main search page
+// @Tags         web
+// @Router       / [get]
 func (g *APIGateway) proxyToWebService(w http.ResponseWriter, r *http.Request) {
 	g.proxyToService("web-service")(w, r)
 }
@@ -104,6 +137,8 @@ func (g *APIGateway) setRoutes() {
 	g.router.HandleFunc("/login", g.proxyToUserService).Methods("POST")
 	g.router.HandleFunc("/register", g.proxyToUserService).Methods("POST")
 	g.router.HandleFunc("/search/{username}", g.proxyToUserService).Methods("GET")
+
+	g.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	protected := g.router.PathPrefix("/").Subrouter()
 	protected.HandleFunc("/", g.proxyToWebService).Methods("GET")

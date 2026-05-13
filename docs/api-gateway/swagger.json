@@ -1,0 +1,167 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API Gateway for FCH messenger. All protected routes require JWT cookie.",
+        "title": "FCH API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Serves main search page",
+                "tags": [
+                    "web"
+                ],
+                "summary": "Web service proxy",
+                "responses": {}
+            }
+        },
+        "/chat/{id}": {
+            "get": {
+                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat service proxy",
+                "responses": {}
+            }
+        },
+        "/group-chat/create": {
+            "get": {
+                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat service proxy",
+                "responses": {}
+            },
+            "post": {
+                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat service proxy",
+                "responses": {}
+            }
+        },
+        "/group-chat/join-to-chat/{groupID}": {
+            "get": {
+                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat service proxy",
+                "responses": {}
+            }
+        },
+        "/login": {
+            "get": {
+                "description": "Proxies user-related requests (login, register, search)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "User service proxy",
+                "responses": {}
+            },
+            "post": {
+                "description": "Proxies user-related requests (login, register, search)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "User service proxy",
+                "responses": {}
+            }
+        },
+        "/my-chats": {
+            "get": {
+                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat service proxy",
+                "responses": {}
+            }
+        },
+        "/register": {
+            "get": {
+                "description": "Proxies user-related requests (login, register, search)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "User service proxy",
+                "responses": {}
+            },
+            "post": {
+                "description": "Proxies user-related requests (login, register, search)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "User service proxy",
+                "responses": {}
+            }
+        },
+        "/search/{username}": {
+            "get": {
+                "description": "Proxies user-related requests (login, register, search)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "User service proxy",
+                "responses": {}
+            }
+        },
+        "/start-chat/{userID}": {
+            "get": {
+                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat service proxy",
+                "responses": {}
+            }
+        }
+    },
+    "securityDefinitions": {
+        "JWT": {
+            "type": "apiKey",
+            "name": "jwt",
+            "in": "cookie"
+        }
+    }
+}

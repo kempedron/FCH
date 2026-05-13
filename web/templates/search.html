@@ -13,6 +13,7 @@
                 --muted: #6b7280;
                 --accent: #4f46e5;
                 --border: #e5e7eb;
+                --nav-h: 62px;
             }
             [data-theme="dark"] {
                 --bg: #0f172a;
@@ -32,6 +33,7 @@
                 font-family: sans-serif;
                 background: var(--bg);
                 color: var(--text);
+                padding-bottom: var(--nav-h);
             }
 
             .container {
@@ -119,6 +121,50 @@
             .icon {
                 font-size: 16px;
             }
+
+            .bottom-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: var(--nav-h);
+                background: var(--card);
+                border-top: 1px solid var(--border);
+                display: flex;
+                justify-content: center;
+                z-index: 100;
+            }
+            .nav-inner {
+                width: 100%;
+                max-width: 680px;
+                display: flex;
+            }
+            .nav-tab {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+                color: var(--muted);
+                font-size: 11px;
+                font-weight: 600;
+            }
+            .nav-tab.active {
+                color: var(--accent);
+                position: relative;
+            }
+            .nav-tab.active::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 36px;
+                height: 3px;
+                background: var(--accent);
+                border-radius: 0 0 4px 4px;
+            }
         </style>
     </head>
 
@@ -152,6 +198,13 @@
                 </div>
             </main>
         </div>
+
+        <nav class="bottom-nav">
+            <div class="nav-inner">
+                <a href="/" class="nav-tab active">Поиск</a>
+                <a href="/my-chats" class="nav-tab">Мои чаты</a>
+            </div>
+        </nav>
 
         <script>
             document.getElementById("themeBtn").onclick = () => {

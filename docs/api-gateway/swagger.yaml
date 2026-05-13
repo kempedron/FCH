@@ -1,0 +1,117 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: API Gateway for FCH messenger. All protected routes require JWT cookie.
+  title: FCH API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Serves main search page
+      responses: {}
+      summary: Web service proxy
+      tags:
+      - web
+  /chat/{id}:
+    get:
+      description: Proxies chat-related requests (chats, messages, groups)
+      produces:
+      - application/json
+      responses: {}
+      summary: Chat service proxy
+      tags:
+      - chat
+  /group-chat/create:
+    get:
+      description: Proxies chat-related requests (chats, messages, groups)
+      produces:
+      - application/json
+      responses: {}
+      summary: Chat service proxy
+      tags:
+      - chat
+    post:
+      description: Proxies chat-related requests (chats, messages, groups)
+      produces:
+      - application/json
+      responses: {}
+      summary: Chat service proxy
+      tags:
+      - chat
+  /group-chat/join-to-chat/{groupID}:
+    get:
+      description: Proxies chat-related requests (chats, messages, groups)
+      produces:
+      - application/json
+      responses: {}
+      summary: Chat service proxy
+      tags:
+      - chat
+  /login:
+    get:
+      description: Proxies user-related requests (login, register, search)
+      produces:
+      - application/json
+      responses: {}
+      summary: User service proxy
+      tags:
+      - user
+    post:
+      description: Proxies user-related requests (login, register, search)
+      produces:
+      - application/json
+      responses: {}
+      summary: User service proxy
+      tags:
+      - user
+  /my-chats:
+    get:
+      description: Proxies chat-related requests (chats, messages, groups)
+      produces:
+      - application/json
+      responses: {}
+      summary: Chat service proxy
+      tags:
+      - chat
+  /register:
+    get:
+      description: Proxies user-related requests (login, register, search)
+      produces:
+      - application/json
+      responses: {}
+      summary: User service proxy
+      tags:
+      - user
+    post:
+      description: Proxies user-related requests (login, register, search)
+      produces:
+      - application/json
+      responses: {}
+      summary: User service proxy
+      tags:
+      - user
+  /search/{username}:
+    get:
+      description: Proxies user-related requests (login, register, search)
+      produces:
+      - application/json
+      responses: {}
+      summary: User service proxy
+      tags:
+      - user
+  /start-chat/{userID}:
+    get:
+      description: Proxies chat-related requests (chats, messages, groups)
+      produces:
+      - application/json
+      responses: {}
+      summary: Chat service proxy
+      tags:
+      - chat
+securityDefinitions:
+  JWT:
+    in: cookie
+    name: jwt
+    type: apiKey
+swagger: "2.0"

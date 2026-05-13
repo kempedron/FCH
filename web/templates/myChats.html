@@ -208,6 +208,49 @@
                 color: var(--muted);
             }
 
+            .create-group-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                border-radius: 10px;
+                background: var(--accent);
+                color: #fff;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 700;
+                transition: background 0.2s;
+                white-space: nowrap;
+            }
+            .create-group-btn:hover {
+                background: var(--accent-hover, #3730a3);
+            }
+
+            .fab {
+                position: fixed;
+                bottom: calc(var(--nav-h) + 20px);
+                right: 20px;
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                background: var(--accent);
+                color: #fff;
+                border: none;
+                box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+                font-size: 22px;
+                cursor: pointer;
+                z-index: 99;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .fab:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
+            }
+
             .bottom-nav {
                 position: fixed;
                 bottom: 0;
@@ -268,7 +311,10 @@
                 </div>
             </header>
 
-            <div class="page-title">Мои чаты</div>
+            <div class="page-title" style="display: flex; justify-content: space-between; align-items: center;">
+                Мои чаты
+                <a href="/group-chat/create" class="create-group-btn">+ Создать группу</a>
+            </div>
 
             <div class="chat-list">
                 {{$me := .MyID}} {{range .Chats}} {{$otherUser := ""}} {{$myName := ""}} {{range
@@ -306,6 +352,8 @@
                 {{end}}
             </div>
         </div>
+
+        <a href="/" class="fab" title="Новый чат">✏️</a>
 
         <nav class="bottom-nav">
             <div class="nav-inner">
