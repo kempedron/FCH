@@ -132,9 +132,11 @@ func MakeHanlerForNewChat(tmpl *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		opponentID := uint(middleware.GetParamByUrl("userID", r))
 		myID, _ := middleware.GetUserIDFromRequest(r)
+		fmt.Println("OPPONENT ID: -> ", opponentID, " <- !!!")
 
 		if exist, chat := service.IsChatExist(myID, opponentID); exist {
 			http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
+			return
 		}
 
 		chat, err := service.GetOrCreatePersonalChat(uint(myID), uint(opponentID))
@@ -144,6 +146,7 @@ func MakeHanlerForNewChat(tmpl *template.Template) http.HandlerFunc {
 		}
 		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
 	}
+
 }
 
 func MakeHanderForCreateNewGroupChat(tmp *template.Template) http.HandlerFunc {

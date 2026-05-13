@@ -51,11 +51,17 @@ func CreateChat(userID uint, myID uint) (*models.Chat, error) {
 func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 	var chat models.Chat
 
+	havingCount := 2
+	if myID == opponentID {
+		havingCount = 1
+	}
+
 	subquery := database.DB.Model(&models.ChatParticipants{}).
 		Select("chat_id").
 		Where("user_id IN ? AND is_group = ? AND deleted_at IS NULL", []uint{myID, opponentID}, false).
 		Group("chat_id").
-		Having("COUNT(DISTINCT user_id) = 2")
+		Having("COUNT(DISTINCT user_id) = ?", havingCount)
+
 	err := database.DB.
 		Preload("Participants.User").
 		Preload("Messages").
@@ -103,7 +109,7 @@ func IsChatExist(myID, opponentID uint) (bool, models.Chat) {
 		Joins("JOIN chat_participants p2 ON p2.chat_id = chats.id").
 		Where("((p1.user_id = ? AND p2.user_id = ?) OR (p1.user_id = ? AND p2.user_id = ?))",
 			myID, opponentID, opponentID, myID).
-		Where("p1.is_group = ? AND p2.is_group = ?", false, false).
+		Where("chats.is_group = ?", false).
 		Where("p1.deleted_at IS NULL AND p2.deleted_at IS NULL AND chats.deleted_at IS NULL").
 		First(&chat).Error
 	return err == nil, chat

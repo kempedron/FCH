@@ -271,20 +271,19 @@
             <div class="page-title">Мои чаты</div>
 
             <div class="chat-list">
-                {{$me := .MyID}} {{range .Chats}} {{$otherUser := ""}} {{range
+                {{$me := .MyID}} {{range .Chats}} {{$otherUser := ""}} {{$myName := ""}} {{range
                 .Participants}} {{if ne .UserID $me}} {{$otherUser =
-                .User.Username}} {{end}} {{end}}
+                .User.Username}} {{else}} {{$myName = .User.Username}} {{end}} {{end}}
 
                 <a href="/chat/{{.ID}}" class="chat-item">
                     <div class="avatar">
                         {{if $otherUser}}{{slice $otherUser 0
-                        1}}{{else}}?{{end}}
+                        1}}{{else}}{{if $myName}}{{slice $myName 0 1}}{{else}}?{{end}}{{end}}
                     </div>
                     <div class="chat-info">
                         <div class="chat-top">
                             <span class="chat-name">
-                                {{if $otherUser}}{{$otherUser}}{{else}}Чат
-                                #{{.ID}}{{end}}
+                                {{if $otherUser}}{{$otherUser}}{{else}}{{$myName}}{{end}}
                             </span>
                             <span class="chat-time">
                                 {{.UpdatedAt.Format "15:04"}}
