@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"os"
 
+	_ "FCH/docs/api-gateway"
+
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/koding/websocketproxy"
@@ -139,6 +141,9 @@ func (g *APIGateway) setRoutes() {
 	g.router.HandleFunc("/search/{username}", g.proxyToUserService).Methods("GET")
 
 	g.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+	g.router.HandleFunc("/swagger", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
+	})
 
 	protected := g.router.PathPrefix("/").Subrouter()
 	protected.HandleFunc("/", g.proxyToWebService).Methods("GET")
