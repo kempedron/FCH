@@ -348,18 +348,34 @@
             </div>
 
             <div class="chat-meta">
-                <h2 id="chatTitle">{{if .Chat.IsGroup}}{{.Chat.Name}}{{else}}Чат #{{.Chat.ID}}{{end}}</h2>
+                <h2 id="chatTitle">
+                    {{if .Chat.IsGroup}}{{.Chat.Name}}{{else}}Чат
+                    #{{.Chat.ID}}{{end}}
+                </h2>
                 <div class="sub" id="statusText">Подключение...</div>
             </div>
 
             <div class="header-actions">
                 {{if .Chat.IsGroup}}
-                <a href="/group-chat/create?id={{.Chat.ID}}&code={{.Chat.IviteCode}}" class="icon-btn" title="Пригласить">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="8.5" cy="7" r="4"/>
-                        <line x1="20" y1="8" x2="20" y2="14"/>
-                        <line x1="23" y1="11" x2="17" y2="11"/>
+                <a
+                    href="/group-chat/create?id={{.Chat.ID}}&code={{.Chat.InviteCode}}"
+                    class="icon-btn"
+                    title="Пригласить"
+                >
+                    <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="8.5" cy="7" r="4" />
+                        <line x1="20" y1="8" x2="20" y2="14" />
+                        <line x1="23" y1="11" x2="17" y2="11" />
                     </svg>
                 </a>
                 {{end}}

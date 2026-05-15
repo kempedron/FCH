@@ -5,6 +5,7 @@ import (
 	"FCH/internal/database"
 	"FCH/internal/middleware"
 	"FCH/internal/models"
+	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -24,6 +25,7 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 		myID, _ := middleware.GetUserIDFromRequest(r)
 
 		var chat models.Chat
+		var buf bytes.Buffer
 
 		err := database.DB.Table("chats").
 			Preload("Participants.User").
@@ -49,7 +51,14 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 			"Chat": chat,
 			"MyID": myID,
 		}
-		tmpl.ExecuteTemplate(w, "chatPage.html", data)
+		err = tmpl.ExecuteTemplate(w, "chatPage.html", data)
+		if err != nil {
+			log.Printf("html rendering error: %s", err)
+			http.Error(w, "html render Error", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf8")
+		buf.WriteTo(w)
 	}
 }
 
