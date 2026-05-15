@@ -81,6 +81,15 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 	chatIDStr := vars["chatID"]
 	chatID, _ := strconv.ParseUint(chatIDStr, 10, 32)
 
+	var count int64
+	database.DB.Model(&models.ChatParticipants{}).
+		Where("chat_id = ? AND user_id = ? AND deleted_at IS NULL", chatID, myID).
+		Count(&count)
+	if count == 0 {
+		http.Error(w, "Доступ запрещен", http.StatusForbidden)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
@@ -97,15 +106,6 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 		var msg ChatMessage
 		if err := conn.ReadJSON(&msg); err != nil {
 			break
-		}
-
-		var count int64
-		database.DB.Model(&models.ChatParticipants{}).
-			Where("chat_id = ? AND user_id = ? AND deleted_at IS NULL", chatID, myID).
-			Count(&count)
-		if count == 0 {
-			http.Error(w, "forbidden", http.StatusForbidden)
-			return
 		}
 
 		dbMessage := models.Message{
@@ -258,6 +258,20 @@ func JoinToGroupChat(w http.ResponseWriter, r *http.Request) {
 	err = database.DB.Where("id = ? AND invite_code = ? AND is_group = ? AND deleted_at IS NULL", groupChatID, invite_code, true).First(&chat).Error
 	if err != nil {
 		http.Error(w, "invalid or exparid invite link", http.StatusNotFound)
+		return
+	}
+
+	var count int64
+	err = database.DB.Model(&models.ChatParticipants{}).
+		Where("chat_id = ? AND user_id = ? AND deleted_at IS NULL", groupChatID, userID).
+		Count(&count).Error
+	if err != nil {
+		log.Printf("error checking user in group chat: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	if count > 0 {
+		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupChatID), 10), http.StatusFound)
 		return
 	}
 

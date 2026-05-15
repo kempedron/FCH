@@ -50,8 +50,8 @@ func (Chat) TableName() string {
 
 type ChatParticipants struct {
 	gorm.Model
-	ChatID     uint   `gorm:"type:index;not null"`
-	UserID     uint   `gorm:"type:index;not null"`
+	ChatID     uint   `gorm:"not null;index:ind_chat_user,unique,where:deleted_at IS NULL"`
+	UserID     uint   `gorm:"not null;index:ind_chat_user,unique,where:deleted_at IS NULL"`
 	Role       string `gorm:"type:varchar(255);not null;default:'member'"`
 	LastReadAt time.Time
 	Chat       Chat `gorm:"foreignKey:ChatID"`
