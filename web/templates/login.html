@@ -3,6 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="csrf-token" content="{{.CSRFToken}}" />
+
         <title>Fch — Вход</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -64,7 +66,6 @@
                     color 0.3s;
             }
 
-            /* Subtle background blobs */
             body::before,
             body::after {
                 content: "";
@@ -340,24 +341,46 @@
 
             form.onsubmit = async (e) => {
                 e.preventDefault();
-                const data = Object.fromEntries(new FormData(form));
+
+                // Преобразуем данные формы в обычный JS-объект и сериализуем в JSON
+                const formData = new FormData(form);
+                const plainFormData = Object.fromEntries(formData.entries());
+                const jsonBody = JSON.stringify(plainFormData);
+
+                // Получаем токен из мета-тега страницы
+                const csrfToken = document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute("content");
+
                 try {
                     status.className = "status";
-                    status.textContent = "Входим...";
+                    status.textContent = "Связь с сервером...";
                     submitBtn.disabled = true;
-                    const res = await fetch("/login", {
+
+                    const res = await fetch(window.location.pathname, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(data),
+                        headers: {
+                            // Указываем бэкенду, что отправляем JSON
+                            "Content-Type": "application/json",
+                            "X-CSRF-Token": csrfToken,
+                        },
+                        body: jsonBody, // Передаем строку JSON вместо URLSearchParams
                         credentials: "include",
                     });
-                    if (!res.ok) throw new Error(await res.text());
+
+                    if (!res.ok) {
+                        throw new Error(await res.text());
+                    }
+
                     status.className = "status success";
                     status.textContent = "✓ Успешно!";
                     window.location.href = "/";
                 } catch (e) {
                     status.className = "status error";
-                    status.textContent = "Неверный логин или пароль";
+                    status.textContent =
+                        window.location.pathname === "/login"
+                            ? "Неверный логин или пароль"
+                            : "Ошибка регистрации. Попробуйте другой username.";
                     submitBtn.disabled = false;
                 }
             };

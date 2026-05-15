@@ -41,6 +41,7 @@ type Chat struct {
 	Messages     []Message          `gorm:"foreignKey:ChatID"`
 	IsGroup      bool               `gorm:"type:boolean;not null;default:false"`
 	CreatorID    uint               `json:"creator_id"`
+	InviteCode   string             `gorm:"type:varchar(64);uniqueIndex"`
 }
 
 func (Chat) TableName() string {

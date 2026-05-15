@@ -348,13 +348,13 @@
             </div>
 
             <div class="chat-meta">
-                <h2 id="chatTitle">Чат #{{.Chat.ID}}</h2>
+                <h2 id="chatTitle">{{if .Chat.IsGroup}}{{.Chat.Name}}{{else}}Чат #{{.Chat.ID}}{{end}}</h2>
                 <div class="sub" id="statusText">Подключение...</div>
             </div>
 
             <div class="header-actions">
                 {{if .Chat.IsGroup}}
-                <a href="/group-chat/create?id={{.Chat.ID}}" class="icon-btn" title="Пригласить">
+                <a href="/group-chat/create?id={{.Chat.ID}}&code={{.Chat.IviteCode}}" class="icon-btn" title="Пригласить">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                         <circle cx="8.5" cy="7" r="4"/>
@@ -482,49 +482,69 @@
                 {{end}}
             ];
 
-            // 2. Логика названия чата (Имя собеседника)
-            const opponent = participants.find(p => p.id !== myID);
-            const recipientID = opponent ? opponent.id : 0;
+            // 2. Логика названия чата
+            const isGroup = {{.Chat.IsGroup}};
+            const chatName = "{{.Chat.Name}}";
 
-            if (opponent) {
-                document.getElementById("chatTitle").textContent = opponent.name;
+            if (isGroup && chatName) {
+                document.getElementById("chatTitle").textContent = chatName;
                 const av = document.getElementById("peerAvatar");
-                // Обновляем аватарку (первая буква имени)
-                if(av.firstChild) av.firstChild.nodeValue = opponent.name[0].toUpperCase();
+                if (av.firstChild) av.firstChild.nodeValue = chatName[0].toUpperCase();
+            } else {
+                const opponent = participants.find(p => p.id !== myID);
+                if (opponent) {
+                    document.getElementById("chatTitle").textContent = opponent.name;
+                    const av = document.getElementById("peerAvatar");
+                    if (av.firstChild) av.firstChild.nodeValue = opponent.name[0].toUpperCase();
+                }
             }
+            const recipientID = (participants.find(p => p.id !== myID) || {}).id || 0;
 
-            // 3. WebSocket соединение
-            const protocol  = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const socketURL = `${protocol}//${location.host}/chat/${chatID}/send`;
-            let socket      = new WebSocket(socketURL);
-
+            // 3. WebSocket соединение с авто-переподключением
             const messagesEl = document.getElementById("messages");
             const msgInput   = document.getElementById("msgInput");
             const sendBtn    = document.getElementById("sendBtn");
             const statusText = document.getElementById("statusText");
             const onlineDot  = document.getElementById("onlineDot");
 
+            let socket;
+            let reconnectAttempts = 0;
+            const maxReconnectAttempts = 10;
+
+            function connectWebSocket() {
+                const protocol  = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const socketURL = `${protocol}//${location.host}/chat/${chatID}/send`;
+                socket = new WebSocket(socketURL);
+
+                socket.onopen = () => {
+                    statusText.innerText = "В сети";
+                    onlineDot.style.display = "block";
+                    reconnectAttempts = 0;
+                };
+
+                socket.onclose = () => {
+                    statusText.innerText = "Соединение закрыто";
+                    onlineDot.style.display = "none";
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        setTimeout(connectWebSocket, 1000 * Math.min(reconnectAttempts, 5));
+                    }
+                };
+
+                socket.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        appendMessage(msg);
+                    } catch (e) {
+                        console.error("Ошибка парсинга сообщения:", e);
+                    }
+                };
+            }
+
+            connectWebSocket();
+
             // Автоскролл вниз при загрузке
             messagesEl.scrollTop = messagesEl.scrollHeight;
-
-            socket.onopen = () => {
-                statusText.innerText = "В сети";
-                onlineDot.style.display = "block";
-            };
-
-            socket.onclose = () => {
-                statusText.innerText = "Соединение закрыто";
-                onlineDot.style.display = "none";
-            };
-
-            socket.onmessage = (event) => {
-                try {
-                    const msg = JSON.parse(event.data);
-                    appendMessage(msg);
-                } catch (e) {
-                    console.error("Ошибка парсинга сообщения:", e);
-                }
-            };
 
             // 4. Функция добавления сообщения в интерфейс
             function appendMessage(msg) {
@@ -542,10 +562,16 @@
                 const date = msg.created_at ? new Date(msg.created_at) : new Date();
                 const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                div.innerHTML = `
-                    <div class="bubble">${content}</div>
-                    <div class="time">${timeStr}</div>
-                `;
+                const bubble = document.createElement("div");
+                bubble.className = "bubble";
+                bubble.textContent = content;
+
+                const time = document.createElement("div");
+                time.className = "time";
+                time.textContent = timeStr;
+
+                div.appendChild(bubble);
+                div.appendChild(time);
 
                 // Убираем заглушку "Начните разговор", если она есть
                 const emptyState = document.getElementById("emptyState");

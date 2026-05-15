@@ -2,14 +2,17 @@ package main
 
 import (
 	"FCH/internal/middleware"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 
 	_ "FCH/docs/api-gateway"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/koding/websocketproxy"
@@ -69,9 +72,22 @@ func (g *APIGateway) proxyToService(serviceName string) http.HandlerFunc {
 		log.Printf("proxing request to %s service: %s", serviceName, r.URL.Path)
 		servis, exist := g.services[serviceName]
 		if !exist {
-			http.Error(w, "Service unavaible", http.StatusInternalServerError)
+			http.Error(w, "Service unavailable", http.StatusInternalServerError)
 			return
 		}
+
+		if r.Method == http.MethodPost && strings.Contains(r.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
+			if err := r.ParseForm(); err == nil {
+				bodyStr := r.PostForm.Encode()
+				r.Body = io.NopCloser(strings.NewReader(bodyStr))
+				r.ContentLength = int64(len(bodyStr))
+			}
+		}
+
+		if token := csrf.Token(r); token != "" {
+			r.Header.Set("X-CSRF-Token", token)
+		}
+		r.Host = servis.target.Host
 
 		servis.proxy.ServeHTTP(w, r)
 	}
@@ -134,11 +150,19 @@ func (g *APIGateway) proxyWebSocket(serviceName string) http.HandlerFunc {
 }
 
 func (g *APIGateway) setRoutes() {
-	g.router.HandleFunc("/login", g.proxyToUserService).Methods("GET")
-	g.router.HandleFunc("/register", g.proxyToUserService).Methods("GET")
-	g.router.HandleFunc("/login", g.proxyToUserService).Methods("POST")
-	g.router.HandleFunc("/register", g.proxyToUserService).Methods("POST")
-	g.router.HandleFunc("/search/{username}", g.proxyToUserService).Methods("GET")
+	csrfMiddleware := csrf.Protect(
+		[]byte(os.Getenv("CSRF_KEY")),
+		csrf.Secure(false),
+		csrf.Path("/"),
+		csrf.TrustedOrigins([]string{"localhost:8080", "127.0.0.1:8080"}),
+		csrf.RequestHeader("X-CSRF-Token"),
+	)
+
+	authRouter := g.router.PathPrefix("/").Subrouter()
+	authRouter.Use(csrfMiddleware)
+
+	authRouter.HandleFunc("/login", g.proxyToUserService).Methods("GET", "POST")
+	authRouter.HandleFunc("/register", g.proxyToUserService).Methods("GET", "POST")
 
 	g.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 	g.router.HandleFunc("/swagger", func(w http.ResponseWriter, r *http.Request) {
@@ -146,17 +170,17 @@ func (g *APIGateway) setRoutes() {
 	})
 
 	protected := g.router.PathPrefix("/").Subrouter()
+	protected.Use(middleware.JWTAuth)
+	protected.Use(csrfMiddleware)
+
 	protected.HandleFunc("/", g.proxyToWebService).Methods("GET")
 	protected.HandleFunc("/my-chats", g.proxyToChatService).Methods("GET")
-
+	protected.HandleFunc("/search/{username}", g.proxyToUserService).Methods("GET")
 	protected.HandleFunc("/chat/{userID}", g.proxyToChatService).Methods("GET")
 	protected.HandleFunc("/start-chat/{userID}", g.proxyToChatService).Methods("GET")
 	protected.HandleFunc("/chat/{chatID}/send", g.proxyWebSocket("chat-service"))
 	protected.HandleFunc("/group-chat/join-to-chat/{groupID}", g.proxyToChatService).Methods("GET")
 	protected.HandleFunc("/group-chat/create", g.proxyToChatService)
-
-	protected.Use(middleware.JWTAuth)
-
 }
 
 func NewAPIGateway(cfg *Config) *APIGateway {

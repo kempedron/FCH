@@ -233,6 +233,11 @@
                 <p>Укажите название и описание для вашего нового сообщества</p>
 
                 <form action="/group-chat/create" method="POST">
+                    <input
+                        type="hidden"
+                        name="gorilla.csrf.Token"
+                        value="{{.CSRFToken}}"
+                    />
                     <div class="form-group">
                         <label for="group_name">Название группы</label>
                         <input
@@ -330,14 +335,15 @@
             // Если через URL (например ?id=10), используй код ниже:
             const urlParams = new URLSearchParams(window.location.search);
             const groupIDFromUrl = urlParams.get("id");
+            const groupCode = urlParams.get("code");
 
             const inviteInput = document.getElementById("inviteUrl");
 
-            if (groupIDFromUrl) {
+            if (groupIDFromUrl && groupCode) {
                 inviteInput.value =
                     window.location.origin +
                     "/group-chat/join-to-chat/" +
-                    groupIDFromUrl;
+                    groupIDFromUrl + "?code=" + groupCode;
             }
 
             // 3. Копирование

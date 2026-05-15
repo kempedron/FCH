@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -29,10 +30,14 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 			Preload("Messages", func(db *gorm.DB) *gorm.DB {
 				return db.Order("created_at ASC")
 			}).
+			Where("id IN (?)", database.DB.Table("chat_participants").
+				Select("chat_id").
+				Where("user_id = ? AND deleted_at IS NULL", myID),
+			).
 			First(&chat, uint(chatID)).Error
 
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				MakeHanlerForNewChat(tmpl)(w, r)
 				return
 			}
@@ -49,7 +54,14 @@ func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
 }
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		allowedOrigins := []string{
+			"http://localhost:8080",
+			"http://127.0.0.1:8080",
+		}
+		return slices.Contains(allowedOrigins, origin)
+	},
 }
 
 func SendMessage(w http.ResponseWriter, r *http.Request) {
@@ -59,9 +71,6 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	chatIDStr := vars["chatID"]
 	chatID, _ := strconv.ParseUint(chatIDStr, 10, 32)
-
-	var participants []models.ChatParticipants
-	database.DB.Where("chat_id = ? AND deleted_at IS NULL", chatID).Find(&participants)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -81,6 +90,15 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
+		var count int64
+		database.DB.Model(&models.ChatParticipants{}).
+			Where("chat_id = ? AND user_id = ? AND deleted_at IS NULL", chatID, myID).
+			Count(&count)
+		if count == 0 {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+
 		dbMessage := models.Message{
 			ChatID:   uint(chatID),
 			AuthorID: myID,
@@ -96,6 +114,9 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			Content:   dbMessage.Content,
 			CreatedAt: dbMessage.CreatedAt,
 		}
+
+		var participants []models.ChatParticipants
+		database.DB.Where("chat_id = ? AND deleted_at IS NULL", chatID).Find(&participants)
 
 		participantIDs := make([]uint, len(participants))
 		for i, p := range participants {
@@ -149,10 +170,18 @@ func MakeHanlerForNewChat(tmpl *template.Template) http.HandlerFunc {
 
 }
 
+// handle GET and POST methods
 func MakeHanderForCreateNewGroupChat(tmp *template.Template) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			tmp.ExecuteTemplate(w, "create_group.html", nil)
+
+			csrfToken := r.Header.Get("X-CSRF-Token")
+
+			data := map[string]string{
+				"CSRFToken": csrfToken,
+			}
+
+			tmp.ExecuteTemplate(w, "create_group.html", data)
 			return
 		}
 
@@ -166,14 +195,16 @@ func MakeHanderForCreateNewGroupChat(tmp *template.Template) http.HandlerFunc {
 		userID, err := middleware.GetUserIDFromRequest(r)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
 		}
 		var groupID uint
 
 		err = database.DB.Transaction(func(tx *gorm.DB) error {
 			newChat := models.Chat{
-				Name:      groupName,
-				IsGroup:   true,
-				CreatorID: userID,
+				Name:       groupName,
+				IsGroup:    true,
+				CreatorID:  userID,
+				InviteCode: service.GenerateInviteCode(),
 			}
 
 			if err := tx.Create(&newChat).Error; err != nil {
@@ -205,12 +236,22 @@ func MakeHanderForCreateNewGroupChat(tmp *template.Template) http.HandlerFunc {
 }
 
 func JoinToGroupChat(w http.ResponseWriter, r *http.Request) {
+	invite_code := r.URL.Query().Get("code")
 	groupChatID := uint(middleware.GetParamByUrl("groupID", r))
 	userID, err := middleware.GetUserIDFromRequest(r)
 	if err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	var chat models.Chat
+
+	err = database.DB.Where("id = ? AND invite_code = ? AND is_group = ? AND deleted_at IS NULL", groupChatID, invite_code, true).First(&chat).Error
+	if err != nil {
+		http.Error(w, "invalid or exparid invite link", http.StatusNotFound)
+		return
+	}
+
 	err = service.AddUserToGroupChat(userID, groupChatID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

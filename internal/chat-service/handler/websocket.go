@@ -42,6 +42,7 @@ func (h *Hub) SendTo(recipient uint, msg ChatMessage) error {
 	err := conn.WriteJSON(msg)
 	if err != nil {
 		log.Printf("Hub: Error writing to JSON for user %d: %v", recipient, err)
+		h.clients.Delete(recipient)
 	}
 	return err
 }

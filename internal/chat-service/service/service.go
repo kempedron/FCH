@@ -4,6 +4,8 @@ import (
 	"FCH/internal/database"
 	"FCH/internal/middleware"
 	"FCH/internal/models"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"log"
 
@@ -57,10 +59,12 @@ func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 	}
 
 	subquery := database.DB.Model(&models.ChatParticipants{}).
-		Select("chat_id").
-		Where("user_id IN ? AND is_group = ? AND deleted_at IS NULL", []uint{myID, opponentID}, false).
-		Group("chat_id").
-		Having("COUNT(DISTINCT user_id) = ?", havingCount)
+		Select("chat_participants.chat_id").
+		Joins("JOIN chats ON chats.id = chat_participants.chat_id").
+		Where("chat_participants.user_id IN ? AND chats.is_group = ? AND chat_participants.deleted_at IS NULL",
+			[]uint{myID, opponentID}, false).
+		Group("chat_participants.chat_id").
+		Having("COUNT(DISTINCT chat_participants.user_id) = ?", havingCount)
 
 	err := database.DB.
 		Preload("Participants.User").
@@ -71,18 +75,26 @@ func GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
 		return &chat, nil
 	}
 	if err == gorm.ErrRecordNotFound {
-		newChat := models.Chat{Name: "Personal Chat"}
+		newChat := models.Chat{
+			Name:       "Personal Chat",
+			InviteCode: GenerateInviteCode(),
+		}
 		if err := database.DB.Create(&newChat).Error; err != nil {
 			return nil, err
 		}
 		p1 := models.ChatParticipants{ChatID: newChat.ID, UserID: myID}
 		p2 := models.ChatParticipants{ChatID: newChat.ID, UserID: opponentID}
-		database.DB.Create(&p1)
-		database.DB.Create(&p2)
+
+		if err := database.DB.Create(&p1).Error; err != nil {
+			return nil, err
+		}
+		if err := database.DB.Create(&p2).Error; err != nil {
+			return nil, err
+		}
 		return &newChat, nil
 	}
 
-	return &chat, nil
+	return nil, err
 }
 
 func GetMyChats(myID uint) ([]models.Chat, error) {
@@ -126,6 +138,10 @@ func AddUserToGroupChat(userID uint, groupChatID uint) error {
 		return errors.New("нельзя добавить пользователя в личный чат напрямую")
 	}
 
+	if IsUserInGroup(userID, chat.Participants) {
+		return errors.New("пользователь уже находится в этом чате")
+	}
+
 	newParticipant := models.ChatParticipants{
 		ChatID: groupChatID,
 		UserID: userID,
@@ -133,4 +149,19 @@ func AddUserToGroupChat(userID uint, groupChatID uint) error {
 	}
 
 	return database.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newParticipant).Error
+}
+
+func IsUserInGroup(userID uint, groupChat []models.ChatParticipants) bool {
+	for _, val := range groupChat {
+		if val.UserID == userID {
+			return true
+		}
+	}
+	return false
+}
+
+func GenerateInviteCode() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }

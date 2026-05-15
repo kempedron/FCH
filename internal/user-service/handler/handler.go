@@ -20,7 +20,9 @@ type LoginRequest struct {
 
 func MakeHandlerForLoginPage(tmpl *template.Template) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl.ExecuteTemplate(w, "login.html", nil)
+		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+			"CSRFToken": r.Header.Get("X-CSRF-Token"),
+		})
 	})
 }
 
@@ -59,7 +61,9 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 
 func MakeHandlerForRegisterPage(tmpl *template.Template) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl.ExecuteTemplate(w, "register.html", nil)
+		tmpl.ExecuteTemplate(w, "register.html", map[string]interface{}{
+			"CSRFToken": r.Header.Get("X-CSRF-Token"),
+		})
 	})
 }
 
