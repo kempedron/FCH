@@ -321,13 +321,13 @@
                 <a href="/chat/{{.ID}}" class="chat-item">
                     <div class="avatar">
                         {{if .IsGroup}}
-                            {{slice .Name 0 1}}
+                            {{firstChar .Name}}
                         {{else}}
                             {{$otherUser := ""}}{{$myName := ""}}
                             {{range .Participants}}
                                 {{if ne .UserID $me}}{{$otherUser = .User.Username}}{{else}}{{$myName = .User.Username}}{{end}}
                             {{end}}
-                            {{if $otherUser}}{{slice $otherUser 0 1}}{{else}}{{if $myName}}{{slice $myName 0 1}}{{else}}?{{end}}{{end}}
+                            {{if $otherUser}}{{firstChar $otherUser}}{{else}}{{if $myName}}{{firstChar $myName}}{{else}}?{{end}}{{end}}
                         {{end}}
                     </div>
                     <div class="chat-info">

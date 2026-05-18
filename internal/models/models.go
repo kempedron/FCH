@@ -64,8 +64,8 @@ func (ChatParticipants) TableName() string {
 
 type Message struct {
 	gorm.Model
-	ChatID      uint         `gorm:"type:index;not null"`
-	AuthorID    uint         `gorm:"type:index;not null"`
+	ChatID      uint         `gorm:"index;not null"`
+	AuthorID    uint         `gorm:"index;not null"`
 	Content     string       `gorm:"type:text;not null"`
 	Attachments []Attachment `gorm:"foreignKey:MessageID"`
 	Chat        Chat         `gorm:"foreignKey:ChatID"`

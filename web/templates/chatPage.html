@@ -319,6 +319,28 @@
             .nav-tab.active {
                 color: var(--accent);
             }
+            .toast {
+                position: fixed;
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%) translateY(20px);
+                background: var(--accent);
+                color: #fff;
+                padding: 10px 20px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 500;
+                opacity: 0;
+                transition:
+                    opacity 0.3s,
+                    transform 0.3s;
+                pointer-events: none;
+                z-index: 200;
+            }
+            .toast.show {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         </style>
     </head>
     <body>
@@ -357,9 +379,9 @@
 
             <div class="header-actions">
                 {{if .Chat.IsGroup}}
-                <a
-                    href="/group-chat/create?id={{.Chat.ID}}&code={{.Chat.InviteCode}}"
+                <button
                     class="icon-btn"
+                    id="inviteBtn"
                     title="Пригласить"
                 >
                     <svg
@@ -377,7 +399,7 @@
                         <line x1="20" y1="8" x2="20" y2="14" />
                         <line x1="23" y1="11" x2="17" y2="11" />
                     </svg>
-                </a>
+                </button>
                 {{end}}
                 <button class="icon-btn" id="sidebarToggle" title="Участники">
                     <svg
@@ -403,7 +425,7 @@
         </header>
 
         <div class="main-layout">
-            <aside class="sidebar" id="sidebar">
+            <side class="sidebar" id="sidebar">
                 <div class="sidebar-head">Участники</div>
                 <div id="memberList">
                     {{range .Chat.Participants}}
@@ -412,7 +434,7 @@
                             class="peer-avatar"
                             style="width: 32px; height: 32px; font-size: 12px"
                         >
-                            {{printf "%.1s" .User.Username}}
+                            {{firstChar .User.Username}}
                         </div>
                         <span
                             class="member-name"
@@ -422,7 +444,7 @@
                     </div>
                     {{end}}
                 </div>
-            </aside>
+            </side>
 
             <div class="chat-area">
                 <div class="messages" id="messages">
@@ -486,10 +508,12 @@
             </div>
         </nav>
 
+        <div class="toast" id="toast">Ссылка скопирована</div>
         <script>
             // 1. Данные из Go
             const myID   = Number("{{.MyID}}");
             const chatID = Number("{{.Chat.ID}}");
+            const inviteCode = "{{.Chat.InviteCode}}";
 
             // Список участников для определения собеседника
             const participants = [
@@ -620,6 +644,18 @@
                     sendMsg();
                 }
             };
+
+            // Инвайт-ссылка для групповых чатов
+            const inviteBtn = document.getElementById("inviteBtn");
+            const toast = document.getElementById("toast");
+            if (inviteBtn) {
+                inviteBtn.onclick = () => {
+                    const link = window.location.origin + "/group-chat/join-to-chat/" + chatID + "?code=" + inviteCode;
+                    navigator.clipboard.writeText(link);
+                    toast.classList.add("show");
+                    setTimeout(() => toast.classList.remove("show"), 2000);
+                };
+            }
 
             // Темы и боковая панель
             document.getElementById("sidebarToggle").onclick = () => {
