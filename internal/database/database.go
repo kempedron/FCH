@@ -12,9 +12,7 @@ import (
 	"FCH/internal/models"
 )
 
-var DB *gorm.DB
-
-func InitDB() error {
+func InitDB() (*gorm.DB, error) {
 	var err error
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
@@ -24,7 +22,7 @@ func InitDB() error {
 		os.Getenv("DB_NAME"),
 	)
 	fmt.Println("dsn: ", dsn)
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	DB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
@@ -45,6 +43,6 @@ func InitDB() error {
 
 	fmt.Println("SUCCESSFYLLU INIT DATABASE!")
 
-	return nil
+	return DB, nil
 
 }

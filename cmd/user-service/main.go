@@ -35,7 +35,7 @@ func InitTemplates() *template.Template {
 
 func main() {
 	tmpl := InitTemplates()
-	err := database.InitDB()
+	_, err := database.InitDB()
 	if err != nil {
 		log.Fatalf("failed to init database: %v", err)
 	}

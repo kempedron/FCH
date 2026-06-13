@@ -3,23 +3,35 @@ package service
 import (
 	"FCH/internal/database"
 	"FCH/internal/models"
+	"FCH/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Login(username, password string) *models.User {
-	var user models.User
-	database.DB.Where("username = ?", username).First(&user)
+var db, err = database.InitDB()
+
+type Service struct {
+	userRepo repository.UserRepository
+}
+
+func NewService(repo repository.UserRepository) *Service {
+	return &Service{userRepo: repo}
+}
+
+func (s *Service) Login(username, password string) *models.User {
+	user, err := s.userRepo.FindByUsername(username)
+	if err != nil {
+		return nil
+	}
 	if err := user.CheckPassword(password); err != nil {
 		return nil
 	}
-
-	return &user
+	return user
 }
 
-func Register(username, password string) (*models.User, error) {
-	var user models.User
-	if err := database.DB.Where("username = ?", username).First(&user).Error; err == nil {
+func (s *Service) Register(username, password string) (*models.User, error) {
+	existing, _ := s.userRepo.FindByUsername(username)
+	if existing != nil {
 		return nil, nil
 	}
 
@@ -32,7 +44,7 @@ func Register(username, password string) (*models.User, error) {
 		Username:     username,
 		PasswordHash: string(hashedPassword),
 	}
-	if err := database.DB.Create(&newUser).Error; err != nil {
+	if err := s.userRepo.Create(&newUser); err != nil {
 		return nil, err
 	}
 

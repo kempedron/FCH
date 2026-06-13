@@ -18,6 +18,8 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+var db, err = database.InitDB()
+
 func MakeHandlerForLoginPage(tmpl *template.Template) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
@@ -114,7 +116,7 @@ func MakeHandlerForSearchPage(tmpl *template.Template) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var user models.User
 		username := mux.Vars(r)["username"]
-		err := database.DB.Where("username=?", username).First(&user).Error
+		err := db.Where("username=?", username).First(&user).Error
 		if err != nil {
 			if r.Header.Get("Accept") == "application/json" {
 				w.Header().Set("Content-Type", "application/json")
