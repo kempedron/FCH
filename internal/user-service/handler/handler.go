@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"FCH/internal/database"
 	"FCH/internal/jwt"
-	"FCH/internal/models"
 	"FCH/internal/user-service/service"
 	"encoding/json"
 	"html/template"
@@ -18,17 +16,22 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-var db, err = database.InitDB()
+type UserHandler struct {
+	tmpl        *template.Template
+	userService service.UserService
+}
 
-func MakeHandlerForLoginPage(tmpl *template.Template) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
-			"CSRFToken": r.Header.Get("X-CSRF-Token"),
-		})
+func NewUserHandler(tmpl *template.Template, userService service.UserService) *UserHandler {
+	return &UserHandler{tmpl: tmpl, userService: userService}
+}
+
+func (h *UserHandler) LoginPageHandler(w http.ResponseWriter, r *http.Request) {
+	h.tmpl.ExecuteTemplate(w, "login.html", map[string]interface{}{
+		"CSRFToken": r.Header.Get("X-CSRF-Token"),
 	})
 }
 
-func HandlerLogin(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandlerLoginPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -39,7 +42,7 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := service.Login(req.Username, req.Password)
+	user := h.userService.Login(req.Username, req.Password)
 	if user == nil {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
@@ -61,15 +64,13 @@ func HandlerLogin(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func MakeHandlerForRegisterPage(tmpl *template.Template) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tmpl.ExecuteTemplate(w, "register.html", map[string]interface{}{
-			"CSRFToken": r.Header.Get("X-CSRF-Token"),
-		})
+func (h *UserHandler) RegisterPageHandler(w http.ResponseWriter, r *http.Request) {
+	h.tmpl.ExecuteTemplate(w, "register.html", map[string]interface{}{
+		"CSRFToken": r.Header.Get("X-CSRF-Token"),
 	})
 }
 
-func HandlerRegister(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandlerRegisterPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -79,7 +80,7 @@ func HandlerRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
-	user, err := service.Register(req.Username, req.Password)
+	user, err := h.userService.Register(req.Username, req.Password)
 	if err != nil {
 		http.Error(w, "Something went wrong...", http.StatusInternalServerError)
 		return
@@ -112,30 +113,28 @@ type SearchedUser struct {
 	ID       uint
 }
 
-func MakeHandlerForSearchPage(tmpl *template.Template) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var user models.User
-		username := mux.Vars(r)["username"]
-		err := db.Where("username=?", username).First(&user).Error
-		if err != nil {
-			if r.Header.Get("Accept") == "application/json" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusNotFound)
-				json.NewEncoder(w).Encode(map[string]string{"error": "User not found"})
-				return
-			}
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
-		}
-		data := SearchedUser{
-			Username: user.Username,
-			ID:       user.ID,
-		}
+func (h *UserHandler) SearchPageHandler(w http.ResponseWriter, r *http.Request) {
+	username := mux.Vars(r)["username"]
+	user, err := h.userService.SearchByUsername(username)
+	if err != nil {
 		if r.Header.Get("Accept") == "application/json" {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(data)
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "User not found"})
 			return
 		}
-		tmpl.ExecuteTemplate(w, "search.html", data)
-	})
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	data := SearchedUser{
+		Username: user.Username,
+		ID:       user.ID,
+	}
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
+		return
+	}
+	h.tmpl.ExecuteTemplate(w, "search.html", data)
+
 }

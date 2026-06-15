@@ -1,15 +1,12 @@
 package middleware
 
 import (
-	"FCH/internal/database"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 )
-
-var db, err = database.InitDB()
 
 func GetParamByUrl(name string, r *http.Request) int {
 	vars := mux.Vars(r)

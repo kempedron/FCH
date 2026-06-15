@@ -16,7 +16,7 @@ type userRepo struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) UserRepository {
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepo{db: db}
 }
 
@@ -40,20 +40,4 @@ func (r *userRepo) FindByUsername(username string) (*models.User, error) {
 
 func (r *userRepo) Create(user *models.User) error {
 	return r.db.Create(user).Error
-}
-
-func (r *userRepo) GetUsernameByID(userID uint) string {
-	var user models.User
-	if err := r.db.First(&user, userID).Error; err != nil {
-		return ""
-	}
-	return user.Username
-}
-
-func (r *userRepo) GetIDByUsername(username string) uint {
-	var user models.User
-	if err := r.db.First(&user, "username = ?", username).Error; err != nil {
-		return 0
-	}
-	return user.ID
 }

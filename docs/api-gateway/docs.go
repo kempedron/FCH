@@ -18,148 +18,790 @@ const docTemplate = `{
         "/": {
             "get": {
                 "description": "Serves main search page",
+                "produces": [
+                    "text/html"
+                ],
                 "tags": [
                     "web"
                 ],
-                "summary": "Web service proxy",
-                "responses": {}
+                "summary": "Main page",
+                "responses": {
+                    "200": {
+                        "description": "Main page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    }
+                }
             }
         },
-        "/chat/{id}": {
+        "/chat/{chatID}/send": {
             "get": {
-                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "description": "Renders chat page for a specific chat\nRenders list of user's chats\nCreates or retrieves a personal chat with another user\nGroup chat creation page (GET) or submission (POST)\nJoin a group chat via invite code\nUpgrades to WebSocket for real-time messaging",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
                     "chat"
                 ],
-                "summary": "Chat service proxy",
-                "responses": {}
+                "summary": "WebSocket chat connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group name (POST only)",
+                        "name": "group_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Chat ID",
+                        "name": "chatID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching protocols to WebSocket"
+                    },
+                    "200": {
+                        "description": "Group create form",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to /chat/{groupID}"
+                    },
+                    "400": {
+                        "description": "Invalid or expired invite code"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "403": {
+                        "description": "Access denied — user not in chat"
+                    }
+                }
+            }
+        },
+        "/chat/{userID}": {
+            "get": {
+                "description": "Renders chat page for a specific chat\nRenders list of user's chats\nCreates or retrieves a personal chat with another user\nGroup chat creation page (GET) or submission (POST)\nJoin a group chat via invite code\nUpgrades to WebSocket for real-time messaging",
+                "produces": [
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html"
+                ],
+                "tags": [
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat"
+                ],
+                "summary": "WebSocket chat connection",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Chat ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Target user ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group name (POST only)",
+                        "name": "group_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching protocols to WebSocket"
+                    },
+                    "200": {
+                        "description": "Group create form",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to /chat/{groupID}"
+                    },
+                    "400": {
+                        "description": "Invalid or expired invite code"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "403": {
+                        "description": "Access denied — user not in chat"
+                    }
+                }
             }
         },
         "/group-chat/create": {
             "get": {
-                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "description": "Renders chat page for a specific chat\nRenders list of user's chats\nCreates or retrieves a personal chat with another user\nGroup chat creation page (GET) or submission (POST)\nJoin a group chat via invite code\nUpgrades to WebSocket for real-time messaging",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
                     "chat"
                 ],
-                "summary": "Chat service proxy",
-                "responses": {}
+                "summary": "WebSocket chat connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group name (POST only)",
+                        "name": "group_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching protocols to WebSocket"
+                    },
+                    "200": {
+                        "description": "Group create form",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to /chat/{groupID}"
+                    },
+                    "400": {
+                        "description": "Invalid or expired invite code"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "403": {
+                        "description": "Access denied — user not in chat"
+                    }
+                }
             },
             "post": {
-                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "description": "Renders chat page for a specific chat\nRenders list of user's chats\nCreates or retrieves a personal chat with another user\nGroup chat creation page (GET) or submission (POST)\nJoin a group chat via invite code\nUpgrades to WebSocket for real-time messaging",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
                     "chat"
                 ],
-                "summary": "Chat service proxy",
-                "responses": {}
+                "summary": "WebSocket chat connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group name (POST only)",
+                        "name": "group_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching protocols to WebSocket"
+                    },
+                    "200": {
+                        "description": "Group create form",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to /chat/{groupID}"
+                    },
+                    "400": {
+                        "description": "Invalid or expired invite code"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "403": {
+                        "description": "Access denied — user not in chat"
+                    }
+                }
             }
         },
         "/group-chat/join-to-chat/{groupID}": {
             "get": {
-                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "description": "Renders chat page for a specific chat\nRenders list of user's chats\nCreates or retrieves a personal chat with another user\nGroup chat creation page (GET) or submission (POST)\nJoin a group chat via invite code\nUpgrades to WebSocket for real-time messaging",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
                     "chat"
                 ],
-                "summary": "Chat service proxy",
-                "responses": {}
+                "summary": "WebSocket chat connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group name (POST only)",
+                        "name": "group_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Group chat ID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching protocols to WebSocket"
+                    },
+                    "200": {
+                        "description": "Group create form",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to /chat/{groupID}"
+                    },
+                    "400": {
+                        "description": "Invalid or expired invite code"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "403": {
+                        "description": "Access denied — user not in chat"
+                    }
+                }
             }
         },
         "/login": {
             "get": {
-                "description": "Proxies user-related requests (login, register, search)",
+                "description": "Login page (GET) or authentication (POST)\nRegistration page (GET) or submission (POST)\nSearch users by username",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "user",
+                    "user",
                     "user"
                 ],
-                "summary": "User service proxy",
-                "responses": {}
+                "summary": "Search users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "409": {
+                        "description": "User already exists"
+                    }
+                }
             },
             "post": {
-                "description": "Proxies user-related requests (login, register, search)",
+                "description": "Login page (GET) or authentication (POST)\nRegistration page (GET) or submission (POST)\nSearch users by username",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "user",
+                    "user",
                     "user"
                 ],
-                "summary": "User service proxy",
-                "responses": {}
+                "summary": "Search users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "409": {
+                        "description": "User already exists"
+                    }
+                }
             }
         },
         "/my-chats": {
             "get": {
-                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "description": "Renders chat page for a specific chat\nRenders list of user's chats\nCreates or retrieves a personal chat with another user\nGroup chat creation page (GET) or submission (POST)\nJoin a group chat via invite code\nUpgrades to WebSocket for real-time messaging",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
                     "chat"
                 ],
-                "summary": "Chat service proxy",
-                "responses": {}
+                "summary": "WebSocket chat connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group name (POST only)",
+                        "name": "group_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching protocols to WebSocket"
+                    },
+                    "200": {
+                        "description": "Group create form",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to /chat/{groupID}"
+                    },
+                    "400": {
+                        "description": "Invalid or expired invite code"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "403": {
+                        "description": "Access denied — user not in chat"
+                    }
+                }
             }
         },
         "/register": {
             "get": {
-                "description": "Proxies user-related requests (login, register, search)",
+                "description": "Login page (GET) or authentication (POST)\nRegistration page (GET) or submission (POST)\nSearch users by username",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "user",
+                    "user",
                     "user"
                 ],
-                "summary": "User service proxy",
-                "responses": {}
+                "summary": "Search users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "409": {
+                        "description": "User already exists"
+                    }
+                }
             },
             "post": {
-                "description": "Proxies user-related requests (login, register, search)",
+                "description": "Login page (GET) or authentication (POST)\nRegistration page (GET) or submission (POST)\nSearch users by username",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "user",
+                    "user",
                     "user"
                 ],
-                "summary": "User service proxy",
-                "responses": {}
+                "summary": "Search users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "409": {
+                        "description": "User already exists"
+                    }
+                }
             }
         },
         "/search/{username}": {
             "get": {
-                "description": "Proxies user-related requests (login, register, search)",
+                "description": "Login page (GET) or authentication (POST)\nRegistration page (GET) or submission (POST)\nSearch users by username",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "user",
+                    "user",
                     "user"
                 ],
-                "summary": "User service proxy",
-                "responses": {}
+                "summary": "Search users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username (POST only)",
+                        "name": "username",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Password (POST only)",
+                        "name": "password",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username to search",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "409": {
+                        "description": "User already exists"
+                    }
+                }
             }
         },
         "/start-chat/{userID}": {
             "get": {
-                "description": "Proxies chat-related requests (chats, messages, groups)",
+                "description": "Renders chat page for a specific chat\nRenders list of user's chats\nCreates or retrieves a personal chat with another user\nGroup chat creation page (GET) or submission (POST)\nJoin a group chat via invite code\nUpgrades to WebSocket for real-time messaging",
                 "produces": [
-                    "application/json"
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html",
+                    "text/html"
                 ],
                 "tags": [
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
+                    "chat",
                     "chat"
                 ],
-                "summary": "Chat service proxy",
-                "responses": {}
+                "summary": "WebSocket chat connection",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Chat ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Target user ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group name (POST only)",
+                        "name": "group_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching protocols to WebSocket"
+                    },
+                    "200": {
+                        "description": "Group create form",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to /chat/{groupID}"
+                    },
+                    "400": {
+                        "description": "Invalid or expired invite code"
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid JWT"
+                    },
+                    "403": {
+                        "description": "Access denied — user not in chat"
+                    }
+                }
             }
         }
     },

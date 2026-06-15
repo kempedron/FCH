@@ -1,24 +1,25 @@
 package service
 
 import (
-	"FCH/internal/database"
 	"FCH/internal/models"
 	"FCH/internal/repository"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
-var db, err = database.InitDB()
+type UserService interface {
+	Login(string, string) *models.User
+	Register(string, string) (*models.User, error)
+	SearchByUsername(string) (*models.User, error)
+}
 
-type Service struct {
+type userService struct {
 	userRepo repository.UserRepository
 }
 
-func NewService(repo repository.UserRepository) *Service {
-	return &Service{userRepo: repo}
+func NewService(repo repository.UserRepository) UserService {
+	return &userService{userRepo: repo}
 }
 
-func (s *Service) Login(username, password string) *models.User {
+func (s *userService) Login(username, password string) *models.User {
 	user, err := s.userRepo.FindByUsername(username)
 	if err != nil {
 		return nil
@@ -29,24 +30,24 @@ func (s *Service) Login(username, password string) *models.User {
 	return user
 }
 
-func (s *Service) Register(username, password string) (*models.User, error) {
+func (s *userService) Register(username, password string) (*models.User, error) {
 	existing, _ := s.userRepo.FindByUsername(username)
 	if existing != nil {
 		return nil, nil
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
+	newUser := models.User{Username: username}
+	if err := newUser.HashPassword(password); err != nil {
 		return nil, err
 	}
 
-	newUser := models.User{
-		Username:     username,
-		PasswordHash: string(hashedPassword),
-	}
 	if err := s.userRepo.Create(&newUser); err != nil {
 		return nil, err
 	}
 
 	return &newUser, nil
+}
+
+func (s *userService) SearchByUsername(username string) (*models.User, error) {
+	return s.userRepo.FindByUsername(username)
 }

@@ -31,8 +31,8 @@ import (
 type Config struct {
 	Port           string
 	ChatServiceURL string
-	UserServiceURl string
-	WebServiceURl  string
+	UserServiceURL string
+	WebServiceURL  string
 }
 
 type ServiceProxy struct {
@@ -49,8 +49,8 @@ type APIGateway struct {
 func (g *APIGateway) initService() {
 	services := map[string]string{
 		"chat-service": g.config.ChatServiceURL,
-		"user-service": g.config.UserServiceURl,
-		"web-service":  g.config.WebServiceURl,
+		"user-service": g.config.UserServiceURL,
+		"web-service":  g.config.WebServiceURL,
 	}
 	g.services = make(map[string]*ServiceProxy)
 
@@ -93,36 +93,111 @@ func (g *APIGateway) proxyToService(serviceName string) http.HandlerFunc {
 	}
 }
 
-// @Summary      Chat service proxy
-// @Description  Proxies chat-related requests (chats, messages, groups)
+// @Summary      Chat page
+// @Description  Renders chat page for a specific chat
 // @Tags         chat
-// @Produce      json
-// @Router       /chat/{id} [get]
+// @Produce      html
+// @Param        userID path int true "Chat ID"
+// @Success      200 {string} string "Chat page"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
+// @Router       /chat/{userID} [get]
+//
+// @Summary      My chats list
+// @Description  Renders list of user's chats
+// @Tags         chat
+// @Produce      html
+// @Success      200 {string} string "My chats page"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
 // @Router       /my-chats [get]
+//
+// @Summary      Start personal chat
+// @Description  Creates or retrieves a personal chat with another user
+// @Tags         chat
+// @Produce      html
+// @Param        userID path int true "Target user ID"
+// @Success      302 "Redirect to /chat/{chatID}"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
 // @Router       /start-chat/{userID} [get]
+//
+// @Summary      Create group chat form
+// @Description  Group chat creation page (GET) or submission (POST)
+// @Tags         chat
+// @Produce      html
+// @Param        group_name formData string false "Group name (POST only)"
+// @Success      200 {string} string "Group create form"
+// @Success      302 "Redirect to /chat/{groupID} after creation"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
 // @Router       /group-chat/create [get]
 // @Router       /group-chat/create [post]
+//
+// @Summary      Join group chat
+// @Description  Join a group chat via invite code
+// @Tags         chat
+// @Produce      html
+// @Param        groupID path int true "Group chat ID"
+// @Param        code query string true "Invite code"
+// @Success      302 "Redirect to /chat/{groupID}"
+// @Failure      400 "Invalid or expired invite code"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
 // @Router       /group-chat/join-to-chat/{groupID} [get]
+//
+// @Summary      WebSocket chat connection
+// @Description  Upgrades to WebSocket for real-time messaging
+// @Tags         chat
+// @Param        chatID path int true "Chat ID"
+// @Success      101 "Switching protocols to WebSocket"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
+// @Failure      403 "Access denied — user not in chat"
+// @Router       /chat/{chatID}/send [get]
 func (g *APIGateway) proxyToChatService(w http.ResponseWriter, r *http.Request) {
 	g.proxyToService("chat-service")(w, r)
 }
 
-// @Summary      User service proxy
-// @Description  Proxies user-related requests (login, register, search)
+// @Summary      Login form
+// @Description  Login page (GET) or authentication (POST)
 // @Tags         user
-// @Produce      json
+// @Produce      html
+// @Param        username formData string false "Username (POST only)"
+// @Param        password formData string false "Password (POST only)"
+// @Success      200 {string} string "Login page"
+// @Success      200 {object} map[string]string "Login success: {\"status\":\"ok\"}"
+// @Failure      400 "Invalid request body"
+// @Failure      401 "Invalid username or password"
 // @Router       /login [get]
 // @Router       /login [post]
+//
+// @Summary      Register form
+// @Description  Registration page (GET) or submission (POST)
+// @Tags         user
+// @Produce      html
+// @Param        username formData string false "Username (POST only)"
+// @Param        password formData string false "Password (POST only)"
+// @Success      200 {string} string "Register page"
+// @Success      200 {object} map[string]string "Register success: {\"status\":\"ok\"}"
+// @Failure      400 "Invalid request body"
+// @Failure      409 "User already exists"
 // @Router       /register [get]
 // @Router       /register [post]
+//
+// @Summary      Search users
+// @Description  Search users by username
+// @Tags         user
+// @Produce      html
+// @Param        username path string true "Username to search"
+// @Success      200 {string} string "Search results page"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
+// @Failure      404 "User not found"
 // @Router       /search/{username} [get]
 func (g *APIGateway) proxyToUserService(w http.ResponseWriter, r *http.Request) {
 	g.proxyToService("user-service")(w, r)
 }
 
-// @Summary      Web service proxy
+// @Summary      Main page
 // @Description  Serves main search page
 // @Tags         web
+// @Produce      html
+// @Success      200 {string} string "Main page"
+// @Failure      401 "Unauthorized — missing or invalid JWT"
 // @Router       / [get]
 func (g *APIGateway) proxyToWebService(w http.ResponseWriter, r *http.Request) {
 	g.proxyToService("web-service")(w, r)
@@ -203,8 +278,8 @@ func main() {
 	cfg := &Config{
 		Port:           os.Getenv("PORT"),
 		ChatServiceURL: os.Getenv("CHAT_SERVICE_URL"),
-		UserServiceURl: os.Getenv("USER_SERVICE_URL"),
-		WebServiceURl:  os.Getenv("WEB_SERVICE_URL"),
+		UserServiceURL: os.Getenv("USER_SERVICE_URL"),
+		WebServiceURL:  os.Getenv("WEB_SERVICE_URL"),
 	}
 
 	gateway := NewAPIGateway(cfg)

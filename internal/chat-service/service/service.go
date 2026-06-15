@@ -11,11 +11,9 @@ import (
 )
 
 type ChatService interface {
-	GetOrCreateChatByName(username string, myID uint) (*models.Chat, error)
 	GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error)
 	GetMyChats(myID uint) ([]models.Chat, error)
 	IsChatExist(myID, opponentID uint) (bool, *models.Chat)
-	AddUserToGroupChat(userID uint, groupChatID uint) error
 	GetChatByID(chatID, userID uint) (*models.Chat, error)
 	CreateMessage(chatID, authorID uint, content string) (*models.Message, error)
 	GetParticipantIDs(chatID uint) ([]uint, error)
@@ -26,25 +24,15 @@ type ChatService interface {
 
 type service struct {
 	chatRepo repository.ChatRepository
-	userRepo repository.UserRepository
 	partRepo repository.ParticipantRepository
 	msgRepo  repository.MessageRepository
 }
 
 func NewService(
 	chatRepo repository.ChatRepository,
-	userRepo repository.UserRepository,
 	partRepo repository.ParticipantRepository,
 	msgRepo repository.MessageRepository) *service {
-	return &service{chatRepo: chatRepo, userRepo: userRepo, partRepo: partRepo, msgRepo: msgRepo}
-}
-
-func (s *service) GetOrCreateChatByName(username string, myID uint) (*models.Chat, error) {
-	user, err := s.userRepo.FindByUsername(username)
-	if err != nil {
-		return nil, errors.New("user not found")
-	}
-	return s.GetOrCreatePersonalChat(myID, user.ID)
+	return &service{chatRepo: chatRepo, partRepo: partRepo, msgRepo: msgRepo}
 }
 
 func (s *service) GetOrCreatePersonalChat(myID, opponentID uint) (*models.Chat, error) {
@@ -86,24 +74,6 @@ func (s *service) IsChatExist(myID, opponentID uint) (bool, *models.Chat) {
 
 func (s *service) IsUserInChat(chatID, userID uint) (bool, error) {
 	return s.partRepo.IsUserInChat(chatID, userID)
-}
-
-func (s *service) AddUserToGroupChat(userID uint, groupChatID uint) error {
-	chat, err := s.chatRepo.FindByID(groupChatID)
-	if err != nil {
-		return err
-	}
-	if !chat.IsGroup {
-		return errors.New("нельзя добавить пользователя в личный чат напрямую")
-	}
-	inChat, err := s.partRepo.IsUserInChat(groupChatID, userID)
-	if err != nil {
-		return err
-	}
-	if inChat {
-		return errors.New("пользователь уже находится в этом чате")
-	}
-	return s.partRepo.AddUserToGroup(groupChatID, userID)
 }
 
 func (s *service) GetChatByID(chatID, userID uint) (*models.Chat, error) {

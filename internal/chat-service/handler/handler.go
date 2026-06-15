@@ -17,7 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Обернем хэндлеры в структуру для Dependency Injection (внедрения зависимостей)
 type ChatHandler struct {
 	tmpl        *template.Template
 	chatService service.ChatService
@@ -27,37 +26,34 @@ func NewChatHandler(tmpl *template.Template, chatService service.ChatService) *C
 	return &ChatHandler{tmpl: tmpl, chatService: chatService}
 }
 
-func (h *ChatHandler) MakeHandlerForChat() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		chatID := uint(middleware.GetParamByUrl("chatID", r))
-		myID, _ := middleware.GetUserIDFromRequest(r)
+func (h *ChatHandler) ChatPageHandler(w http.ResponseWriter, r *http.Request) {
+	chatID := uint(middleware.GetParamByUrl("chatID", r))
+	myID, _ := middleware.GetUserIDFromRequest(r)
 
-		var buf bytes.Buffer
+	var buf bytes.Buffer
 
-		// Вызов логики строго через сервис
-		chat, err := h.chatService.GetChatByID(chatID, myID)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				h.MakeHandlerForNewChat()(w, r)
-				return
-			}
-			http.Error(w, "chat not found", http.StatusNotFound)
+	chat, err := h.chatService.GetChatByID(chatID, myID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			h.NewChatPageHandler(w, r)
 			return
 		}
-
-		data := map[string]any{
-			"Chat": chat,
-			"MyID": myID,
-		}
-		err = h.tmpl.ExecuteTemplate(&buf, "chatPage.html", data) // Исправлена запись в буфер
-		if err != nil {
-			log.Printf("html rendering error: %s", err)
-			http.Error(w, "html render Error", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf8")
-		buf.WriteTo(w)
+		http.Error(w, "chat not found", http.StatusNotFound)
+		return
 	}
+
+	data := map[string]any{
+		"Chat": chat,
+		"MyID": myID,
+	}
+	err = h.tmpl.ExecuteTemplate(&buf, "chatPage.html", data)
+	if err != nil {
+		log.Printf("html rendering error: %s", err)
+		http.Error(w, "html render Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf8")
+	buf.WriteTo(w)
 }
 
 var upgrader = websocket.Upgrader{
@@ -130,77 +126,70 @@ func (h *ChatHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *ChatHandler) MakeHandlerForMyChats() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		myID, _ := middleware.GetUserIDFromRequest(r)
+func (h *ChatHandler) MyChatsPageHandler(w http.ResponseWriter, r *http.Request) {
+	myID, _ := middleware.GetUserIDFromRequest(r)
 
-		chats, err := h.chatService.GetMyChats(myID)
-		if err != nil {
-			http.Error(w, "Failed to get chats", http.StatusInternalServerError)
-			return
-		}
-		data := struct {
-			Chats []models.Chat
-			MyID  uint
-		}{
-			Chats: chats,
-			MyID:  myID,
-		}
-		h.tmpl.ExecuteTemplate(w, "myChats.html", data)
+	chats, err := h.chatService.GetMyChats(myID)
+	if err != nil {
+		http.Error(w, "Failed to get chats", http.StatusInternalServerError)
+		return
 	}
+	data := struct {
+		Chats []models.Chat
+		MyID  uint
+	}{
+		Chats: chats,
+		MyID:  myID,
+	}
+	h.tmpl.ExecuteTemplate(w, "myChats.html", data)
 }
 
-func (h *ChatHandler) MakeHandlerForNewChat() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		opponentID := uint(middleware.GetParamByUrl("userID", r))
-		myID, _ := middleware.GetUserIDFromRequest(r)
+func (h *ChatHandler) NewChatPageHandler(w http.ResponseWriter, r *http.Request) {
+	opponentID := uint(middleware.GetParamByUrl("userID", r))
+	myID, _ := middleware.GetUserIDFromRequest(r)
 
-		if exist, chat := h.chatService.IsChatExist(myID, opponentID); exist {
-			http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
-			return
-		}
-
-		chat, err := h.chatService.GetOrCreatePersonalChat(myID, opponentID)
-		if err != nil {
-			http.Error(w, "Failed to get chat", http.StatusInternalServerError)
-			return
-		}
+	if exist, chat := h.chatService.IsChatExist(myID, opponentID); exist {
 		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
+		return
 	}
+
+	chat, err := h.chatService.GetOrCreatePersonalChat(myID, opponentID)
+	if err != nil {
+		http.Error(w, "Failed to get chat", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
 }
 
-func (h *ChatHandler) MakeHandlerForCreateNewGroupChat() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			csrfToken := r.Header.Get("X-CSRF-Token")
-			data := map[string]string{
-				"CSRFToken": csrfToken,
-			}
-			h.tmpl.ExecuteTemplate(w, "create_group.html", data)
-			return
+func (h *ChatHandler) MakeHandlerForCreateNewGroupChat(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		csrfToken := r.Header.Get("X-CSRF-Token")
+		data := map[string]string{
+			"CSRFToken": csrfToken,
 		}
-
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
-			return
-		}
-
-		groupName := r.FormValue("group_name")
-		userID, err := middleware.GetUserIDFromRequest(r)
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-
-		// Вся транзакционная магия ушла в глубь архитектуры
-		groupID, err := h.chatService.CreateGroupChat(groupName, userID)
-		if err != nil {
-			http.Error(w, "Не удалось создать группу", http.StatusInternalServerError)
-			return
-		}
-
-		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupID), 10), http.StatusFound)
+		h.tmpl.ExecuteTemplate(w, "create_group.html", data)
+		return
 	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
+		return
+	}
+
+	groupName := r.FormValue("group_name")
+	userID, err := middleware.GetUserIDFromRequest(r)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	groupID, err := h.chatService.CreateGroupChat(groupName, userID)
+	if err != nil {
+		http.Error(w, "Не удалось создать группу", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupID), 10), http.StatusFound)
 }
 
 func (h *ChatHandler) JoinToGroupChat(w http.ResponseWriter, r *http.Request) {

@@ -12,7 +12,6 @@ type ChatRepository interface {
 	FindPersonalChat(userID1, userID2 uint) (*models.Chat, error)
 	FindUserChats(userID uint) ([]models.Chat, error)
 	Create(chat *models.Chat) error
-	FindByInviteCode(code string) (*models.Chat, error)
 	ExistsPersonalChat(userID1, userID2 uint) (bool, *models.Chat)
 	FindByIDAndInviteCode(id uint, code string) (*models.Chat, error)
 	CreateGroupWithTransaction(name string, creatorID uint, inviteCode string) (uint, error)
@@ -86,14 +85,6 @@ func (r *chatRepository) FindUserChats(userID uint) ([]models.Chat, error) {
 
 func (r *chatRepository) Create(chat *models.Chat) error {
 	return r.db.Create(chat).Error
-}
-
-func (r *chatRepository) FindByInviteCode(code string) (*models.Chat, error) {
-	var chat models.Chat
-	err := r.db.
-		Where("invite_code = ? AND is_group = ? AND deleted_at IS NULL", code, true).
-		First(&chat).Error
-	return &chat, err
 }
 
 func (r *chatRepository) ExistsPersonalChat(userID1, userID2 uint) (bool, *models.Chat) {

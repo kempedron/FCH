@@ -26,7 +26,6 @@ type ChatMessage struct {
 	ID        uint      `json:"id"`
 	ChatID    uint      `json:"chat_id"`
 	SenderID  uint      `json:"sender_id"`
-	Recipient uint      `json:"recipient_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 }
