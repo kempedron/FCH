@@ -9,105 +9,610 @@ paths:
   /:
     get:
       description: Serves main search page
-      responses: {}
-      summary: Web service proxy
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: Main page
+          schema:
+            type: string
+        "401":
+          description: Unauthorized — missing or invalid JWT
+      summary: Main page
       tags:
       - web
-  /chat/{id}:
+  /chat/{chatID}/send:
     get:
-      description: Proxies chat-related requests (chats, messages, groups)
+      description: |-
+        Renders chat page for a specific chat
+        Renders list of user's chats
+        Creates or retrieves a personal chat with another user
+        Group chat creation page (GET) or submission (POST)
+        Join a group chat via invite code
+        Upgrades to WebSocket for real-time messaging
+      parameters:
+      - description: Group name (POST only)
+        in: formData
+        name: group_name
+        type: string
+      - description: Invite code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: Chat ID
+        in: path
+        name: chatID
+        required: true
+        type: integer
       produces:
-      - application/json
-      responses: {}
-      summary: Chat service proxy
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "200":
+          description: Group create form
+          schema:
+            type: string
+        "302":
+          description: Redirect to /chat/{groupID}
+        "400":
+          description: Invalid or expired invite code
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "403":
+          description: Access denied — user not in chat
+      summary: WebSocket chat connection
       tags:
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
+  /chat/{userID}:
+    get:
+      description: |-
+        Renders chat page for a specific chat
+        Renders list of user's chats
+        Creates or retrieves a personal chat with another user
+        Group chat creation page (GET) or submission (POST)
+        Join a group chat via invite code
+        Upgrades to WebSocket for real-time messaging
+      parameters:
+      - description: Chat ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: Target user ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: Group name (POST only)
+        in: formData
+        name: group_name
+        type: string
+      - description: Invite code
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "200":
+          description: Group create form
+          schema:
+            type: string
+        "302":
+          description: Redirect to /chat/{groupID}
+        "400":
+          description: Invalid or expired invite code
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "403":
+          description: Access denied — user not in chat
+      summary: WebSocket chat connection
+      tags:
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
       - chat
   /group-chat/create:
     get:
-      description: Proxies chat-related requests (chats, messages, groups)
+      description: |-
+        Renders chat page for a specific chat
+        Renders list of user's chats
+        Creates or retrieves a personal chat with another user
+        Group chat creation page (GET) or submission (POST)
+        Join a group chat via invite code
+        Upgrades to WebSocket for real-time messaging
+      parameters:
+      - description: Group name (POST only)
+        in: formData
+        name: group_name
+        type: string
+      - description: Invite code
+        in: query
+        name: code
+        required: true
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: Chat service proxy
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "200":
+          description: Group create form
+          schema:
+            type: string
+        "302":
+          description: Redirect to /chat/{groupID}
+        "400":
+          description: Invalid or expired invite code
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "403":
+          description: Access denied — user not in chat
+      summary: WebSocket chat connection
       tags:
       - chat
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
     post:
-      description: Proxies chat-related requests (chats, messages, groups)
+      description: |-
+        Renders chat page for a specific chat
+        Renders list of user's chats
+        Creates or retrieves a personal chat with another user
+        Group chat creation page (GET) or submission (POST)
+        Join a group chat via invite code
+        Upgrades to WebSocket for real-time messaging
+      parameters:
+      - description: Group name (POST only)
+        in: formData
+        name: group_name
+        type: string
+      - description: Invite code
+        in: query
+        name: code
+        required: true
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: Chat service proxy
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "200":
+          description: Group create form
+          schema:
+            type: string
+        "302":
+          description: Redirect to /chat/{groupID}
+        "400":
+          description: Invalid or expired invite code
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "403":
+          description: Access denied — user not in chat
+      summary: WebSocket chat connection
       tags:
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
       - chat
   /group-chat/join-to-chat/{groupID}:
     get:
-      description: Proxies chat-related requests (chats, messages, groups)
+      description: |-
+        Renders chat page for a specific chat
+        Renders list of user's chats
+        Creates or retrieves a personal chat with another user
+        Group chat creation page (GET) or submission (POST)
+        Join a group chat via invite code
+        Upgrades to WebSocket for real-time messaging
+      parameters:
+      - description: Group name (POST only)
+        in: formData
+        name: group_name
+        type: string
+      - description: Group chat ID
+        in: path
+        name: groupID
+        required: true
+        type: integer
+      - description: Invite code
+        in: query
+        name: code
+        required: true
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: Chat service proxy
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "200":
+          description: Group create form
+          schema:
+            type: string
+        "302":
+          description: Redirect to /chat/{groupID}
+        "400":
+          description: Invalid or expired invite code
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "403":
+          description: Access denied — user not in chat
+      summary: WebSocket chat connection
       tags:
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
       - chat
   /login:
     get:
-      description: Proxies user-related requests (login, register, search)
+      description: |-
+        Login page (GET) or authentication (POST)
+        Registration page (GET) or submission (POST)
+        Search users by username
+      parameters:
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: User service proxy
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "200":
+          description: Search results page
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "404":
+          description: User not found
+        "409":
+          description: User already exists
+      summary: Search users
       tags:
       - user
+      - user
+      - user
     post:
-      description: Proxies user-related requests (login, register, search)
+      description: |-
+        Login page (GET) or authentication (POST)
+        Registration page (GET) or submission (POST)
+        Search users by username
+      parameters:
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: User service proxy
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "200":
+          description: Search results page
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "404":
+          description: User not found
+        "409":
+          description: User already exists
+      summary: Search users
       tags:
+      - user
+      - user
       - user
   /my-chats:
     get:
-      description: Proxies chat-related requests (chats, messages, groups)
+      description: |-
+        Renders chat page for a specific chat
+        Renders list of user's chats
+        Creates or retrieves a personal chat with another user
+        Group chat creation page (GET) or submission (POST)
+        Join a group chat via invite code
+        Upgrades to WebSocket for real-time messaging
+      parameters:
+      - description: Group name (POST only)
+        in: formData
+        name: group_name
+        type: string
+      - description: Invite code
+        in: query
+        name: code
+        required: true
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: Chat service proxy
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "200":
+          description: Group create form
+          schema:
+            type: string
+        "302":
+          description: Redirect to /chat/{groupID}
+        "400":
+          description: Invalid or expired invite code
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "403":
+          description: Access denied — user not in chat
+      summary: WebSocket chat connection
       tags:
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
       - chat
   /register:
     get:
-      description: Proxies user-related requests (login, register, search)
+      description: |-
+        Login page (GET) or authentication (POST)
+        Registration page (GET) or submission (POST)
+        Search users by username
+      parameters:
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: User service proxy
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "200":
+          description: Search results page
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "404":
+          description: User not found
+        "409":
+          description: User already exists
+      summary: Search users
       tags:
       - user
+      - user
+      - user
     post:
-      description: Proxies user-related requests (login, register, search)
+      description: |-
+        Login page (GET) or authentication (POST)
+        Registration page (GET) or submission (POST)
+        Search users by username
+      parameters:
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: User service proxy
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "200":
+          description: Search results page
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "404":
+          description: User not found
+        "409":
+          description: User already exists
+      summary: Search users
       tags:
+      - user
+      - user
       - user
   /search/{username}:
     get:
-      description: Proxies user-related requests (login, register, search)
+      description: |-
+        Login page (GET) or authentication (POST)
+        Registration page (GET) or submission (POST)
+        Search users by username
+      parameters:
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
+      - description: Username (POST only)
+        in: formData
+        name: username
+        type: string
+      - description: Password (POST only)
+        in: formData
+        name: password
+        type: string
+      - description: Username to search
+        in: path
+        name: username
+        required: true
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: User service proxy
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "200":
+          description: Search results page
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "404":
+          description: User not found
+        "409":
+          description: User already exists
+      summary: Search users
       tags:
+      - user
+      - user
       - user
   /start-chat/{userID}:
     get:
-      description: Proxies chat-related requests (chats, messages, groups)
+      description: |-
+        Renders chat page for a specific chat
+        Renders list of user's chats
+        Creates or retrieves a personal chat with another user
+        Group chat creation page (GET) or submission (POST)
+        Join a group chat via invite code
+        Upgrades to WebSocket for real-time messaging
+      parameters:
+      - description: Chat ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: Target user ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: Group name (POST only)
+        in: formData
+        name: group_name
+        type: string
+      - description: Invite code
+        in: query
+        name: code
+        required: true
+        type: string
       produces:
-      - application/json
-      responses: {}
-      summary: Chat service proxy
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      - text/html
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "200":
+          description: Group create form
+          schema:
+            type: string
+        "302":
+          description: Redirect to /chat/{groupID}
+        "400":
+          description: Invalid or expired invite code
+        "401":
+          description: Unauthorized — missing or invalid JWT
+        "403":
+          description: Access denied — user not in chat
+      summary: WebSocket chat connection
       tags:
+      - chat
+      - chat
+      - chat
+      - chat
+      - chat
       - chat
 securityDefinitions:
   JWT:

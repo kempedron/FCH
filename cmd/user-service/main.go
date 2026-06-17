@@ -2,7 +2,9 @@ package main
 
 import (
 	"FCH/internal/database"
+	"FCH/internal/repository"
 	"FCH/internal/user-service/handler"
+	"FCH/internal/user-service/service"
 	"html/template"
 	"log"
 	"net/http"
@@ -12,12 +14,6 @@ import (
 
 func InitTemplates() *template.Template {
 	funcMap := template.FuncMap{
-		"multiply": func(a, b uint) uint {
-			return a * b
-		},
-		"mul": func(a, b int) int {
-			return a * b
-		},
 		"firstChar": func(s string) string {
 			if len(s) == 0 {
 				return "?"
@@ -35,18 +31,24 @@ func InitTemplates() *template.Template {
 
 func main() {
 	tmpl := InitTemplates()
-	err := database.InitDB()
+	db, err := database.InitDB()
 	if err != nil {
 		log.Fatalf("failed to init database: %v", err)
 	}
+
+	userRepo := repository.NewUserRepository(db)
+
+	userService := service.NewService(userRepo)
+	userHandler := handler.NewUserHandler(tmpl, userService)
+
 	r := mux.NewRouter()
-	r.HandleFunc("/login", handler.HandlerLogin).Methods("POST")
-	r.HandleFunc("/login", handler.MakeHandlerForLoginPage(tmpl)).Methods("GET")
+	r.HandleFunc("/login", userHandler.HandlerLoginPost).Methods("POST")
+	r.HandleFunc("/login", userHandler.LoginPageHandler).Methods("GET")
 
-	r.HandleFunc("/register", handler.HandlerRegister).Methods("POST")
-	r.HandleFunc("/register", handler.MakeHandlerForRegisterPage(tmpl)).Methods("GET")
+	r.HandleFunc("/register", userHandler.HandlerRegisterPost).Methods("POST")
+	r.HandleFunc("/register", userHandler.RegisterPageHandler).Methods("GET")
 
-	r.HandleFunc("/search/{username}", handler.MakeHandlerForSearchPage(tmpl)).Methods("GET")
+	r.HandleFunc("/search/{username}", userHandler.SearchPageHandler).Methods("GET")
 
 	if err := http.ListenAndServe("0.0.0.0:8080", r); err != nil {
 		log.Fatalf("failed to start server: %v", err)

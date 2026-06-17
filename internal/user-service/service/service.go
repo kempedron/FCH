@@ -1,40 +1,53 @@
 package service
 
 import (
-	"FCH/internal/database"
 	"FCH/internal/models"
-
-	"golang.org/x/crypto/bcrypt"
+	"FCH/internal/repository"
 )
 
-func Login(username, password string) *models.User {
-	var user models.User
-	database.DB.Where("username = ?", username).First(&user)
+type UserService interface {
+	Login(string, string) *models.User
+	Register(string, string) (*models.User, error)
+	SearchByUsername(string) (*models.User, error)
+}
+
+type userService struct {
+	userRepo repository.UserRepository
+}
+
+func NewService(repo repository.UserRepository) UserService {
+	return &userService{userRepo: repo}
+}
+
+func (s *userService) Login(username, password string) *models.User {
+	user, err := s.userRepo.FindByUsername(username)
+	if err != nil {
+		return nil
+	}
 	if err := user.CheckPassword(password); err != nil {
 		return nil
 	}
-
-	return &user
+	return user
 }
 
-func Register(username, password string) (*models.User, error) {
-	var user models.User
-	if err := database.DB.Where("username = ?", username).First(&user).Error; err == nil {
+func (s *userService) Register(username, password string) (*models.User, error) {
+	existing, _ := s.userRepo.FindByUsername(username)
+	if existing != nil {
 		return nil, nil
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
+	newUser := models.User{Username: username}
+	if err := newUser.HashPassword(password); err != nil {
 		return nil, err
 	}
 
-	newUser := models.User{
-		Username:     username,
-		PasswordHash: string(hashedPassword),
-	}
-	if err := database.DB.Create(&newUser).Error; err != nil {
+	if err := s.userRepo.Create(&newUser); err != nil {
 		return nil, err
 	}
 
 	return &newUser, nil
+}
+
+func (s *userService) SearchByUsername(username string) (*models.User, error) {
+	return s.userRepo.FindByUsername(username)
 }

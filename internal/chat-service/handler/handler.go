@@ -2,12 +2,10 @@ package handler
 
 import (
 	"FCH/internal/chat-service/service"
-	"FCH/internal/database"
 	"FCH/internal/middleware"
 	"FCH/internal/models"
 	"bytes"
 	"errors"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -19,47 +17,43 @@ import (
 	"gorm.io/gorm"
 )
 
-func MakeHandlerForChat(tmpl *template.Template) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		chatID := uint(middleware.GetParamByUrl("chatID", r))
-		myID, _ := middleware.GetUserIDFromRequest(r)
+type ChatHandler struct {
+	tmpl        *template.Template
+	chatService service.ChatService
+}
 
-		var chat models.Chat
-		var buf bytes.Buffer
+func NewChatHandler(tmpl *template.Template, chatService service.ChatService) *ChatHandler {
+	return &ChatHandler{tmpl: tmpl, chatService: chatService}
+}
 
-		err := database.DB.Table("chats").
-			Preload("Participants.User").
-			Preload("Messages", func(db *gorm.DB) *gorm.DB {
-				return db.Order("created_at ASC")
-			}).
-			Where("id IN (?)", database.DB.Table("chat_participants").
-				Select("chat_id").
-				Where("user_id = ? AND deleted_at IS NULL", myID),
-			).
-			First(&chat, uint(chatID)).Error
+func (h *ChatHandler) ChatPageHandler(w http.ResponseWriter, r *http.Request) {
+	chatID := uint(middleware.GetParamByUrl("chatID", r))
+	myID, _ := middleware.GetUserIDFromRequest(r)
 
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				MakeHanlerForNewChat(tmpl)(w, r)
-				return
-			}
-			http.Error(w, "chat not found", http.StatusNotFound)
+	var buf bytes.Buffer
+
+	chat, err := h.chatService.GetChatByID(chatID, myID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			h.NewChatPageHandler(w, r)
 			return
 		}
-
-		data := map[string]any{
-			"Chat": chat,
-			"MyID": myID,
-		}
-		err = tmpl.ExecuteTemplate(w, "chatPage.html", data)
-		if err != nil {
-			log.Printf("html rendering error: %s", err)
-			http.Error(w, "html render Error", http.StatusNotFound)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf8")
-		buf.WriteTo(w)
+		http.Error(w, "chat not found", http.StatusNotFound)
+		return
 	}
+
+	data := map[string]any{
+		"Chat": chat,
+		"MyID": myID,
+	}
+	err = h.tmpl.ExecuteTemplate(&buf, "chatPage.html", data)
+	if err != nil {
+		log.Printf("html rendering error: %s", err)
+		http.Error(w, "html render Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf8")
+	buf.WriteTo(w)
 }
 
 var upgrader = websocket.Upgrader{
@@ -73,19 +67,18 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func SendMessage(w http.ResponseWriter, r *http.Request) {
+func (h *ChatHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	valID, _ := middleware.GetUserIDFromRequest(r)
 	myID := uint(valID)
 
 	vars := mux.Vars(r)
 	chatIDStr := vars["chatID"]
-	chatID, _ := strconv.ParseUint(chatIDStr, 10, 32)
+	chatID64, _ := strconv.ParseUint(chatIDStr, 10, 32)
+	chatID := uint(chatID64)
 
-	var count int64
-	database.DB.Model(&models.ChatParticipants{}).
-		Where("chat_id = ? AND user_id = ? AND deleted_at IS NULL", chatID, myID).
-		Count(&count)
-	if count == 0 {
+	// Замена "грязного" SQL-запроса на вызов метода сервиса
+	inChat, err := h.chatService.IsUserInChat(chatID, myID)
+	if err != nil || !inChat {
 		http.Error(w, "Доступ запрещен", http.StatusForbidden)
 		return
 	}
@@ -96,7 +89,6 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chatHub.Register(myID, conn)
-
 	defer func() {
 		chatHub.Unregister(myID)
 		conn.Close()
@@ -108,13 +100,12 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		dbMessage := models.Message{
-			ChatID:   uint(chatID),
-			AuthorID: myID,
-			Content:  msg.Content,
+		// Логика записи перенесена в сервис
+		dbMessage, err := h.chatService.CreateMessage(chatID, myID, msg.Content)
+		if err != nil {
+			log.Printf("failed to save message: %v", err)
+			break
 		}
-
-		database.DB.Create(&dbMessage)
 
 		broadcastMsg := ChatMessage{
 			ID:        dbMessage.ID,
@@ -124,128 +115,85 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: dbMessage.CreatedAt,
 		}
 
-		var participants []models.ChatParticipants
-		database.DB.Where("chat_id = ? AND deleted_at IS NULL", chatID).Find(&participants)
-
-		participantIDs := make([]uint, len(participants))
-		for i, p := range participants {
-			participantIDs[i] = p.UserID
+		participantIDs, err := h.chatService.GetParticipantIDs(chatID)
+		if err != nil {
+			log.Printf("failed to get participants: %v", err)
+			continue
 		}
-		chatHub.BroadcastToChat(participantIDs, broadcastMsg, myID)
 
+		chatHub.BroadcastToChat(participantIDs, broadcastMsg, myID)
 		conn.WriteJSON(broadcastMsg)
 	}
 }
 
-func MakeHandlerForMyChats(tmpl *template.Template) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		MyID, _ := middleware.GetUserIDFromRequest(r)
+func (h *ChatHandler) MyChatsPageHandler(w http.ResponseWriter, r *http.Request) {
+	myID, _ := middleware.GetUserIDFromRequest(r)
 
-		chats, err := service.GetMyChats(MyID)
-		if err != nil {
-			http.Error(w, "Failed to get chats", http.StatusInternalServerError)
-			return
-		}
-		data := struct {
-			Chats []models.Chat
-			MyID  uint
-		}{
-			Chats: chats,
-			MyID:  MyID,
-		}
-		fmt.Printf("Chats found: %d for UserID: %d\n", len(chats), MyID)
-		tmpl.ExecuteTemplate(w, "myChats.html", data)
+	chats, err := h.chatService.GetMyChats(myID)
+	if err != nil {
+		http.Error(w, "Failed to get chats", http.StatusInternalServerError)
+		return
 	}
+	data := struct {
+		Chats []models.Chat
+		MyID  uint
+	}{
+		Chats: chats,
+		MyID:  myID,
+	}
+	h.tmpl.ExecuteTemplate(w, "myChats.html", data)
 }
 
-func MakeHanlerForNewChat(tmpl *template.Template) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		opponentID := uint(middleware.GetParamByUrl("userID", r))
-		myID, _ := middleware.GetUserIDFromRequest(r)
-		fmt.Println("OPPONENT ID: -> ", opponentID, " <- !!!")
+func (h *ChatHandler) NewChatPageHandler(w http.ResponseWriter, r *http.Request) {
+	opponentID := uint(middleware.GetParamByUrl("userID", r))
+	myID, _ := middleware.GetUserIDFromRequest(r)
 
-		if exist, chat := service.IsChatExist(myID, opponentID); exist {
-			http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
-			return
-		}
-
-		chat, err := service.GetOrCreatePersonalChat(uint(myID), uint(opponentID))
-		if err != nil {
-			http.Error(w, "Failed to get chat", http.StatusInternalServerError)
-			return
-		}
+	if exist, chat := h.chatService.IsChatExist(myID, opponentID); exist {
 		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
+		return
 	}
 
-}
-
-// handle GET and POST methods
-func MakeHanderForCreateNewGroupChat(tmp *template.Template) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-
-			csrfToken := r.Header.Get("X-CSRF-Token")
-
-			data := map[string]string{
-				"CSRFToken": csrfToken,
-			}
-
-			tmp.ExecuteTemplate(w, "create_group.html", data)
-			return
-		}
-
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
-			return
-		}
-
-		groupName := r.FormValue("group_name")
-
-		userID, err := middleware.GetUserIDFromRequest(r)
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-		var groupID uint
-
-		err = database.DB.Transaction(func(tx *gorm.DB) error {
-			newChat := models.Chat{
-				Name:       groupName,
-				IsGroup:    true,
-				CreatorID:  userID,
-				InviteCode: service.GenerateInviteCode(),
-			}
-
-			if err := tx.Create(&newChat).Error; err != nil {
-				return err
-			}
-
-			participant := models.ChatParticipants{
-				ChatID: newChat.ID,
-				UserID: userID,
-				Role:   "admin",
-			}
-
-			if err := tx.Create(&participant).Error; err != nil {
-				return err
-			}
-
-			groupID = newChat.ID
-
-			return nil
-		})
-
-		if err != nil {
-			http.Error(w, "Не удалось создать группу", http.StatusInternalServerError)
-			return
-		}
-
-		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupID), 10), http.StatusFound)
+	chat, err := h.chatService.GetOrCreatePersonalChat(myID, opponentID)
+	if err != nil {
+		http.Error(w, "Failed to get chat", http.StatusInternalServerError)
+		return
 	}
+	http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(chat.ID), 10), http.StatusFound)
 }
 
-func JoinToGroupChat(w http.ResponseWriter, r *http.Request) {
-	invite_code := r.URL.Query().Get("code")
+func (h *ChatHandler) MakeHandlerForCreateNewGroupChat(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		csrfToken := r.Header.Get("X-CSRF-Token")
+		data := map[string]string{
+			"CSRFToken": csrfToken,
+		}
+		h.tmpl.ExecuteTemplate(w, "create_group.html", data)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
+		return
+	}
+
+	groupName := r.FormValue("group_name")
+	userID, err := middleware.GetUserIDFromRequest(r)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	groupID, err := h.chatService.CreateGroupChat(groupName, userID)
+	if err != nil {
+		http.Error(w, "Не удалось создать группу", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupID), 10), http.StatusFound)
+}
+
+func (h *ChatHandler) JoinToGroupChat(w http.ResponseWriter, r *http.Request) {
+	inviteCode := r.URL.Query().Get("code")
 	groupChatID := uint(middleware.GetParamByUrl("groupID", r))
 	userID, err := middleware.GetUserIDFromRequest(r)
 	if err != nil {
@@ -253,38 +201,12 @@ func JoinToGroupChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var chat models.Chat
-
-	err = database.DB.Where("id = ? AND invite_code = ? AND is_group = ? AND deleted_at IS NULL", groupChatID, invite_code, true).First(&chat).Error
+	err = h.chatService.JoinToGroupChat(groupChatID, inviteCode, userID)
 	if err != nil {
-		http.Error(w, "invalid or exparid invite link", http.StatusNotFound)
+		log.Printf("join group error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var count int64
-	err = database.DB.Model(&models.ChatParticipants{}).
-		Where("chat_id = ? AND user_id = ? AND deleted_at IS NULL", groupChatID, userID).
-		Count(&count).Error
-	if err != nil {
-		log.Printf("error checking user in group chat: %s", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	if count > 0 {
-		http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupChatID), 10), http.StatusFound)
-		return
-	}
-
-	err = service.AddUserToGroupChat(userID, groupChatID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Group not found", http.StatusNotFound)
-		} else {
-			log.Printf("error: %s", err)
-			http.Error(w, "Failed to join", http.StatusInternalServerError)
-		}
-		return
-
-	}
 	http.Redirect(w, r, "/chat/"+strconv.FormatUint(uint64(groupChatID), 10), http.StatusFound)
 }

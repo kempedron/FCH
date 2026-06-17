@@ -11,12 +11,6 @@ import (
 
 func InitTemplates() *template.Template {
 	funcMap := template.FuncMap{
-		"multiply": func(a, b uint) uint {
-			return a * b
-		},
-		"mul": func(a, b int) int {
-			return a * b
-		},
 		"firstChar": func(s string) string {
 			if len(s) == 0 {
 				return "?"

@@ -2,7 +2,9 @@ package main
 
 import (
 	"FCH/internal/chat-service/handler"
+	"FCH/internal/chat-service/service"
 	"FCH/internal/database"
+	"FCH/internal/repository" // Импортируем ваши репозитории
 	"html/template"
 	"log"
 	"net/http"
@@ -12,21 +14,13 @@ import (
 
 func InitTemplates() *template.Template {
 	funcMap := template.FuncMap{
-		"multiply": func(a, b uint) uint {
-			return a * b
-		},
-		"mul": func(a, b int) int {
-			return a * b
-		},
 		"firstChar": func(s string) string {
 			if len(s) == 0 {
 				return "?"
 			}
 			return string([]rune(s)[0])
 		},
-		"not": func(v any) bool {
-			return v == nil
-		},
+		"not": func(v any) bool { return v == nil },
 	}
 	return template.Must(
 		template.New("").Funcs(funcMap).ParseGlob("web/templates/*.html"),
@@ -34,20 +28,31 @@ func InitTemplates() *template.Template {
 }
 
 func main() {
-
 	r := mux.NewRouter()
 
-	err := database.InitDB()
+	db, err := database.InitDB()
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
+
 	tmpl := InitTemplates()
-	r.HandleFunc("/chat/{chatID:[0-9]+}", handler.MakeHandlerForChat(tmpl))
-	r.HandleFunc("/chat/{chatID}/send", handler.SendMessage)
-	r.HandleFunc("/start-chat/{userID:[0-9]+}", handler.MakeHanlerForNewChat(tmpl))
-	r.HandleFunc("/group-chat/join-to-chat/{groupID}", handler.JoinToGroupChat)
-	r.HandleFunc("/group-chat/create", handler.MakeHanderForCreateNewGroupChat(tmpl))
-	r.HandleFunc("/my-chats", handler.MakeHandlerForMyChats(tmpl))
+
+	// REPOS
+	chatRepo := repository.NewChatRepository(db)
+	partRepo := repository.NewParticipantRepository(db)
+	msgRepo := repository.NewMessageRepository(db)
+
+	chatService := service.NewService(chatRepo, partRepo, msgRepo)
+
+	chatHandler := handler.NewChatHandler(tmpl, chatService)
+
+	r.HandleFunc("/chat/{chatID:[0-9]+}", chatHandler.ChatPageHandler)
+	r.HandleFunc("/chat/{chatID}/send", chatHandler.SendMessage)
+	r.HandleFunc("/start-chat/{userID:[0-9]+}", chatHandler.NewChatPageHandler)
+	r.HandleFunc("/group-chat/join-to-chat/{groupID}", chatHandler.JoinToGroupChat)
+	r.HandleFunc("/group-chat/create", chatHandler.MakeHandlerForCreateNewGroupChat)
+	r.HandleFunc("/my-chats", chatHandler.MyChatsPageHandler)
+
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("DEBUG: Chat Service got %s %s", r.Method, r.URL.Path)
@@ -55,5 +60,8 @@ func main() {
 		})
 	})
 
-	http.ListenAndServe(":8080", r)
+	log.Println("Сервер чатов успешно запущен на порту :8080")
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }

@@ -7,14 +7,6 @@ services:
       - .env
     ports:
       - "8080:8080"
-    environment:
-      - PORT=8080
-      - USER_SERVICE_URL=http://user-service:8080
-      - WEB_SERVICE_URL=http://web-service:8080
-      - JWT_SECRET=eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTc3NDI5ODQwOCwiaWF0IjoxNzc0Mjk4NDA4fQ.asZqYyeBhdZNOovgsZahyco13vJX9RSDEEcQGb3Ivk4
-      - CHAT_SERVICE_URL=http://chat-service:8080
-      - CSRF_KEY=80624c543fb7c78a7066600b67fdd6528e5cc0be5ed603622163f4cbc79bbb30
-
     networks:
       - backend
     depends_on:
@@ -41,14 +33,6 @@ services:
       dockerfile: cmd/user-service/Dockerfile
     env_file:
       - .env
-    environment:
-      - PORT=8080
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=dbUser
-      - DB_PASSWORD=dbPassword
-      - DB_NAME=my_db
-      - JWT_SECRET=eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTc3NDI5ODQwOCwiaWF0IjoxNzc0Mjk4NDA4fQ.asZqYyeBhdZNOovgsZahyco13vJX9RSDEEcQGb3Ivk4
     networks:
       - backend
     depends_on:
@@ -62,14 +46,6 @@ services:
       dockerfile: cmd/chat-service/Dockerfile
     env_file:
       - .env
-    environment:
-      - PORT=8080
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=dbUser
-      - DB_PASSWORD=dbPassword
-      - DB_NAME=my_db
-      - JWT_SECRET=eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTc3NDI5ODQwOCwiaWF0IjoxNzc0Mjk4NDA4fQ.asZqYyeBhdZNOovgsZahyco13vJX9RSDEEcQGb3Ivk4
     networks:
       - backend
     depends_on:
@@ -80,12 +56,8 @@ services:
     image: postgres:15-alpine
     container_name: db
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: my_db
-      POSTGRES_USER: dbUser
-      POSTGRES_PASSWORD: dbPassword
-      DB_HOST: db
-      DB_PORT: 5432
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
